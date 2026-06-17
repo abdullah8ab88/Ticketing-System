@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function role() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? userDoc(request.auth.uid).data.role
+        : 'guest';
+    }
+
+    function activeUser() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userDoc(request.auth.uid).data.pending == false;
+    }
+
+    function isAdmin() {
+      return activeUser() && role() == 'admin';
+    }
+
+    function isIT() {
+      return activeUser() && (role() == 'admin' || role() == 'it_manager' || role() == 'agent');
+    }
+
+    match /users/{uid} {
+      allow create: if signedIn() && request.auth.uid == uid;
+      allow read: if signedIn() && (request.auth.uid == uid || isIT());
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['name', 'department', 'updatedAt'])
+        );
+      allow delete: if isAdmin() && request.auth.uid != uid;
+    }
+
+    match /tickets/{ticketId} {
+      allow create: if activeUser() && request.resource.data.requesterId == request.auth.uid;
+      allow read: if activeUser() && (isIT() || resource.data.requesterId == request.auth.uid || resource.data.assignedToId == request.auth.uid);
+      allow update: if isIT()
+        || (
+          activeUser()
+          && resource.data.requesterId == request.auth.uid
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['description', 'updatedAt'])
+        );
+      allow delete: if isAdmin();
+
+      match /comments/{commentId} {
+        allow create: if activeUser()
+          && exists(/databases/$(database)/documents/tickets/$(ticketId))
+          && (isIT() || get(/databases/$(database)/documents/tickets/$(ticketId)).data.requesterId == request.auth.uid)
+          && (request.resource.data.visibility == 'public' || isIT());
+        allow read: if activeUser()
+          && exists(/databases/$(database)/documents/tickets/$(ticketId))
+          && (
+            isIT() ||
+            (
+              get(/databases/$(database)/documents/tickets/$(ticketId)).data.requesterId == request.auth.uid
+              && resource.data.visibility == 'public'
+            )
+          );
+        allow update, delete: if isAdmin();
+      }
+    }
+  }
+}

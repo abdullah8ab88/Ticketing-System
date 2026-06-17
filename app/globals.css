@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --teal: #274C5A;
+  --blue-gray: #86A7B2;
+  --dark-gray: #2B2B2B;
+  --gray-50: #7F7F7F;
+  --paper: #F7FAFB;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--dark-gray);
+  background:
+    radial-gradient(circle at top left, rgba(134, 167, 178, .28), transparent 34rem),
+    linear-gradient(180deg, #f8fbfc 0%, #eef5f7 100%);
+  font-family: TheSans, Arial, Helvetica, sans-serif;
+}
+
+.brand-gradient {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(134, 167, 178, .28), transparent 24rem),
+    linear-gradient(135deg, #274C5A 0%, #183540 100%);
+}
+
+.focus-ring {
+  @apply focus:outline-none focus:ring-4 focus:ring-lazem-bluegray/30 focus:border-lazem-teal;
+}
+
+.input {
+  @apply w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus-ring;
+}
+
+.label {
+  @apply mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-lazem-teal px-4 py-3 text-sm font-semibold text-white shadow-soft transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-lazem-teal shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.card {
+  @apply rounded-3xl border border-white/70 bg-white/90 p-6 shadow-soft backdrop-blur;
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+}
+
+.status-new { @apply bg-blue-50 text-blue-700; }
+.status-assigned { @apply bg-indigo-50 text-indigo-700; }
+.status-progress { @apply bg-amber-50 text-amber-700; }
+.status-waiting { @apply bg-purple-50 text-purple-700; }
+.status-resolved { @apply bg-emerald-50 text-emerald-700; }
+.status-closed { @apply bg-slate-100 text-slate-600; }
+.status-cancelled { @apply bg-rose-50 text-rose-700; }
