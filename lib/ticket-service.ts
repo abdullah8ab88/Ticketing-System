@@ -88,6 +88,12 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
     updatedAt: serverTimestamp(),
     ...(status === 'Closed' ? { closedAt: serverTimestamp() } : {})
   });
+
+  fetch('/api/tickets/notify-status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ticketId, status })
+  }).catch((error) => console.error('Ticket status email notification failed', error));
 }
 
 export async function assignTicket(ticketId: string, agent: UserProfile) {
@@ -102,14 +108,14 @@ export async function assignTicket(ticketId: string, agent: UserProfile) {
 export async function getAgents() {
   const q = query(
     collection(db, 'users'),
-    where('role', 'in', ['it_agent', 'it_manager', 'admin'])
+    where('role', 'in', ['agent', 'it_manager', 'admin'])
   );
 
   const snap = await getDocs(q);
 
   return snap.docs
     .map((d) => d.data() as UserProfile)
-    .filter((u) => u.active === true && u.pending === false);
+    .filter((u) => (u.active ?? u.pending === false) && u.pending === false);
 }
 
 export async function getRecentTickets(max = 5) {

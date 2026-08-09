@@ -2,11 +2,13 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import {
+  OAuthProvider,
   User,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
@@ -18,6 +20,7 @@ type AuthContextValue = {
   profile: UserProfile | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithMicrosoft: () => Promise<void>;
   register: (input: {
     name: string;
     email: string;
@@ -114,6 +117,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       login: async (email, password) => {
         await signInWithEmailAndPassword(auth, email, password);
+      },
+
+      loginWithMicrosoft: async () => {
+        const provider = new OAuthProvider('microsoft.com');
+        const tenant = process.env.NEXT_PUBLIC_MICROSOFT_TENANT_ID;
+        provider.setCustomParameters(tenant ? { tenant } : { prompt: 'select_account' });
+        await signInWithPopup(auth, provider);
       },
 
       register: async ({ name, email, password, department }) => {

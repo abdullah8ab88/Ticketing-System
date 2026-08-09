@@ -21,6 +21,7 @@ export function AppShell({ children, title, subtitle }: { children: React.ReactN
     <div className="min-h-screen lg:flex">
       <aside className="brand-gradient fixed inset-y-0 left-0 z-20 hidden w-72 flex-col p-5 text-white lg:flex">
         <div className="mb-8 flex items-center gap-3">
+          <Link href="/" className="flex items-center">
 <div className="flex h-14 w-20 items-center justify-center rounded-2xl bg-white text-lazem-teal shadow-lg">
   <Image
     src="/logo/Lazem Secondary Logo Solid (1).svg"
@@ -31,6 +32,7 @@ export function AppShell({ children, title, subtitle }: { children: React.ReactN
     className="h-11 w-auto object-contain"
   />
 </div>
+ </Link>
           <div>
 
             <div className="text-lg font-bold">Lazem IT</div>

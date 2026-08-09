@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import {
   collection,
@@ -18,6 +19,7 @@ import type { Priority, Ticket, TicketStatus } from '@/lib/types';
 import { priorityClass, statusClass, statuses } from '@/lib/utils';
 
 export default function TicketsPage() {
+  const router = useRouter();
   const { profile, isIT } = useAuth();
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -174,14 +176,15 @@ export default function TicketsPage() {
 
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50">
+                  <tr
+                    key={t.id}
+                    onClick={() => router.push(`/tickets/${t.id}`)}
+                    className="cursor-pointer hover:bg-slate-50"
+                  >
                     <td className="py-4">
-                      <Link
-                        href={`/tickets/${t.id}`}
-                        className="font-semibold text-lazem-teal hover:underline"
-                      >
+                      <span className="font-semibold text-lazem-teal hover:underline">
                         {t.ticketNo}
-                      </Link>
+                      </span>
                       <div className="text-slate-500">{t.title}</div>
                     </td>
 

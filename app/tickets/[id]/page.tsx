@@ -12,6 +12,16 @@ import { addTicketComment, assignTicket, getAgents, updateTicketStatus } from '@
 import type { CommentVisibility, Ticket, TicketComment, TicketStatus, UserProfile } from '@/lib/types';
 import { priorityClass, statusClass, statuses } from '@/lib/utils';
 
+const TEAM_ASSIGNEE: UserProfile = {
+  uid: 'team-abdullah-rashed',
+  name: 'Abdullah & Rashed',
+  email: '',
+  role: 'agent',
+  department: 'IT',
+  active: true,
+  pending: false,
+};
+
 export default function TicketDetailsPage() {
   const params = useParams<{ id: string }>();
   const { profile, isIT } = useAuth();
@@ -118,13 +128,25 @@ export default function TicketDetailsPage() {
               <h3 className="text-lg font-bold text-lazem-teal">Actions</h3>
               {isIT && (
                 <>
-                  <label className="label mt-5">Assign to</label>
+                  <div className="mt-5 flex items-center justify-between gap-3">
+                    <label className="label">Assign to</label>
+                    {profile && ticket.assignedToId !== profile.uid && (
+                      <button
+                        type="button"
+                        onClick={() => assignTicket(ticket.id, profile)}
+                        className="text-xs font-semibold text-lazem-teal hover:underline"
+                      >
+                        Assign to me
+                      </button>
+                    )}
+                  </div>
                   <select className="input" value={ticket.assignedToId || ''} onChange={(e) => {
-                    const agent = agents.find((a) => a.uid === e.target.value);
+                    const agent = [...agents, TEAM_ASSIGNEE].find((a) => a.uid === e.target.value);
                     if (agent) assignTicket(ticket.id, agent);
                   }}>
                     <option value="">Unassigned</option>
                     {agents.map((a) => <option key={a.uid} value={a.uid}>{a.name} · {a.role.replace('_', ' ')}</option>)}
+                    <option value={TEAM_ASSIGNEE.uid}>{TEAM_ASSIGNEE.name}</option>
                   </select>
                   <label className="label mt-5">Status</label>
                   <select className="input" value={ticket.status} onChange={(e) => updateTicketStatus(ticket.id, e.target.value as TicketStatus)}>

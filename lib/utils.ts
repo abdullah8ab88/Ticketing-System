@@ -31,13 +31,13 @@ export function priorityClass(priority: Priority) {
 
 export const categories = [
   'Hardware Issue',
+  'New device',
   'Software Issue',
   'Network Issue',
   'Access Request',
   'Microsoft 365 / Email',
   'ERP / System Issue',
   'Printer / Scanner',
-  'Cybersecurity',
   'Other'
 ];
 
