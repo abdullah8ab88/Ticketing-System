@@ -2,9 +2,11 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import {
+  AuthCredential,
   OAuthProvider,
   User,
   createUserWithEmailAndPassword,
+  linkWithCredential,
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
@@ -21,6 +23,7 @@ type AuthContextValue = {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithMicrosoft: () => Promise<void>;
+  linkMicrosoftAccount: (email: string, password: string, pendingCredential: AuthCredential) => Promise<void>;
   register: (input: {
     name: string;
     email: string;
@@ -122,8 +125,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loginWithMicrosoft: async () => {
         const provider = new OAuthProvider('microsoft.com');
         const tenant = process.env.NEXT_PUBLIC_MICROSOFT_TENANT_ID;
-        provider.setCustomParameters(tenant ? { tenant } : { prompt: 'select_account' });
+        provider.setCustomParameters({ prompt: 'select_account', ...(tenant ? { tenant } : {}) });
         await signInWithPopup(auth, provider);
+      },
+
+      linkMicrosoftAccount: async (email, password, pendingCredential) => {
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        await linkWithCredential(result.user, pendingCredential);
       },
 
       register: async ({ name, email, password, department }) => {
