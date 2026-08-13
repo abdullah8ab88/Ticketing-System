@@ -86,6 +86,18 @@ export async function addTicketComment(input: {
     createdAt: serverTimestamp()
   });
   await updateDoc(doc(db, 'tickets', input.ticketId), { updatedAt: serverTimestamp() });
+
+  fetch('/api/tickets/notify-comment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ticketId: input.ticketId,
+      authorId: input.author.uid,
+      authorName: input.author.name,
+      body: input.body,
+      visibility: input.visibility
+    })
+  }).catch((error) => console.error('Ticket comment email notification failed', error));
 }
 
 export async function updateTicketStatus(ticketId: string, status: TicketStatus) {
