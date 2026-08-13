@@ -63,6 +63,12 @@ export async function createTicket(input: {
     createdAt: serverTimestamp()
   });
 
+  fetch('/api/tickets/notify-status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ticketId: ref.id, status: 'New' })
+  }).catch((error) => console.error('Ticket creation email notification failed', error));
+
   return ref.id;
 }
 
