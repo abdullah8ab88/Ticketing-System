@@ -6,8 +6,19 @@ import { AppShell } from '@/components/app-shell';
 import { ProtectedRoute } from '@/components/protected-route';
 import { useAuth } from '@/lib/auth-context';
 import { createTicket } from '@/lib/ticket-service';
-import type { Priority } from '@/lib/types';
+import type { OnboardingDetails, Priority } from '@/lib/types';
 import { categories, departments } from '@/lib/utils';
+
+const EMPTY_ONBOARDING: OnboardingDetails = {
+  firstNameAr: '',
+  lastNameAr: '',
+  firstNameEn: '',
+  lastNameEn: '',
+  jobTitleAr: '',
+  jobTitleEn: '',
+  mobile: '',
+  personalEmail: '',
+};
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -34,6 +45,11 @@ export default function NewTicketPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+  const [onboarding, setOnboarding] = useState<OnboardingDetails>(EMPTY_ONBOARDING);
+
+  const canRequestOnboarding = profile?.department === 'HR';
+  const categoryOptions = canRequestOnboarding ? [...categories, 'Onboarding'] : categories;
+  const isOnboarding = form.category === 'Onboarding';
 
   /**
    * IMPORTANT:
@@ -86,6 +102,11 @@ export default function NewTicketPage() {
       return;
     }
 
+    if (isOnboarding && Object.values(onboarding).some((v) => !v.trim())) {
+      setErr('Please complete all onboarding fields.');
+      return;
+    }
+
     setLoading(true);
     setErr('');
 
@@ -94,6 +115,7 @@ export default function NewTicketPage() {
         ...form,
         files,
         requester: profile,
+        onboarding: isOnboarding ? onboarding : undefined,
       });
 
       router.push(`/tickets/${id}`);
@@ -134,7 +156,7 @@ export default function NewTicketPage() {
                 required
               >
                 <option value="">Select category</option>
-                {categories.map((c) => (
+                {categoryOptions.map((c) => (
                   <option key={c}>{c}</option>
                 ))}
               </select>
@@ -217,6 +239,47 @@ export default function NewTicketPage() {
               />
             </div>
           </div>
+
+          {isOnboarding && (
+            <div className="mt-6 border-t border-slate-100 pt-6">
+              <h3 className="font-bold text-lazem-teal">Onboarding details</h3>
+              <p className="mt-1 text-xs text-slate-500">Provide the new employee's information for account setup.</p>
+              <div className="mt-4 grid gap-5 md:grid-cols-2">
+                <div>
+                  <label className="label">First name (Arabic)</label>
+                  <input className="input" value={onboarding.firstNameAr} onChange={(e) => setOnboarding({ ...onboarding, firstNameAr: e.target.value })} required />
+                </div>
+                <div>
+                  <label className="label">Last name (Arabic)</label>
+                  <input className="input" value={onboarding.lastNameAr} onChange={(e) => setOnboarding({ ...onboarding, lastNameAr: e.target.value })} required />
+                </div>
+                <div>
+                  <label className="label">First name (English)</label>
+                  <input className="input" value={onboarding.firstNameEn} onChange={(e) => setOnboarding({ ...onboarding, firstNameEn: e.target.value })} required />
+                </div>
+                <div>
+                  <label className="label">Last name (English)</label>
+                  <input className="input" value={onboarding.lastNameEn} onChange={(e) => setOnboarding({ ...onboarding, lastNameEn: e.target.value })} required />
+                </div>
+                <div>
+                  <label className="label">Job title (Arabic)</label>
+                  <input className="input" value={onboarding.jobTitleAr} onChange={(e) => setOnboarding({ ...onboarding, jobTitleAr: e.target.value })} required />
+                </div>
+                <div>
+                  <label className="label">Job title (English)</label>
+                  <input className="input" value={onboarding.jobTitleEn} onChange={(e) => setOnboarding({ ...onboarding, jobTitleEn: e.target.value })} required />
+                </div>
+                <div>
+                  <label className="label">Mobile number</label>
+                  <input className="input" type="tel" value={onboarding.mobile} onChange={(e) => setOnboarding({ ...onboarding, mobile: e.target.value })} required />
+                </div>
+                <div>
+                  <label className="label">Personal email</label>
+                  <input className="input" type="email" value={onboarding.personalEmail} onChange={(e) => setOnboarding({ ...onboarding, personalEmail: e.target.value })} required />
+                </div>
+              </div>
+            </div>
+          )}
 
           {err && (
             <p className="mt-5 rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">

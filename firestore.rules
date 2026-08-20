@@ -1,73 +1,144 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
     function signedIn() {
       return request.auth != null;
     }
 
-    function userDoc(uid) {
-      return get(/databases/$(database)/documents/users/$(uid));
+    function myUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
-    function role() {
-      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        ? userDoc(request.auth.uid).data.role
-        : 'guest';
-    }
-
-    function activeUser() {
-      return signedIn()
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && userDoc(request.auth.uid).data.pending == false;
+    function isActive() {
+      return signedIn() && myUserDoc().data.active == true;
     }
 
     function isAdmin() {
-      return activeUser() && role() == 'admin';
+      return isActive() && myUserDoc().data.role == 'admin';
     }
 
     function isIT() {
-      return activeUser() && (role() == 'admin' || role() == 'it_manager' || role() == 'agent');
+      return isActive() &&
+        myUserDoc().data.role in ['admin', 'it_manager', 'agent'];
     }
 
-    match /users/{uid} {
-      allow create: if signedIn() && request.auth.uid == uid;
-      allow read: if signedIn() && (request.auth.uid == uid || isIT());
-      allow update: if isAdmin()
-        || (
-          signedIn()
-          && request.auth.uid == uid
-          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['name', 'department', 'updatedAt'])
-        );
-      allow delete: if isAdmin() && request.auth.uid != uid;
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
     }
 
+    // Users
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isIT();
+
+      // Testing mode:
+      // Allow new registered users to create their own profile as active staff.
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.role == 'staff'
+        && request.resource.data.active == true
+        && request.resource.data.pending == false;
+
+      // Only admin can update users, roles, and activation.
+      allow update, delete: if isAdmin();
+    }
+
+    // Tickets
     match /tickets/{ticketId} {
-      allow create: if activeUser() && request.resource.data.requesterId == request.auth.uid;
-      allow read: if activeUser() && (isIT() || resource.data.requesterId == request.auth.uid || resource.data.assignedToId == request.auth.uid);
-      allow update: if isIT()
-        || (
-          activeUser()
-          && resource.data.requesterId == request.auth.uid
-          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['description', 'updatedAt'])
-        );
+      // IT can read all tickets.
+      // Staff can read only their own tickets.
+      allow read: if isIT()
+        || (isActive() && resource.data.requesterId == request.auth.uid);
+
+      // Active users can create tickets only for themselves.
+      // Onboarding tickets can only be created by HR department staff.
+      allow create: if isActive()
+        && request.resource.data.requesterId == request.auth.uid
+        && (request.resource.data.category != 'Onboarding' || myUserDoc().data.department == 'HR');
+
+      // IT can update any ticket.
+      // Staff can only update limited fields on their own open ticket.
+allow update: if isIT()
+  || (
+    isActive()
+    && resource.data.requesterId == request.auth.uid
+    && request.resource.data.requesterId == resource.data.requesterId
+    && request.resource.data.diff(resource.data).changedKeys()
+      .hasOnly([
+        'title',
+        'description',
+        'category',
+        'priority',
+        'department',
+        'attachments',
+        'updatedAt'
+      ])
+    && resource.data.status in ['New', 'Waiting for User']
+  );
+
+      // Only admin can delete tickets.
       allow delete: if isAdmin();
 
+      // Ticket comments
       match /comments/{commentId} {
-        allow create: if activeUser()
-          && exists(/databases/$(database)/documents/tickets/$(ticketId))
-          && (isIT() || get(/databases/$(database)/documents/tickets/$(ticketId)).data.requesterId == request.auth.uid)
-          && (request.resource.data.visibility == 'public' || isIT());
-        allow read: if activeUser()
-          && exists(/databases/$(database)/documents/tickets/$(ticketId))
-          && (
-            isIT() ||
-            (
-              get(/databases/$(database)/documents/tickets/$(ticketId)).data.requesterId == request.auth.uid
-              && resource.data.visibility == 'public'
-            )
+        // IT can read all comments. The requester can only read public comments.
+        allow read: if isIT()
+          || (
+            isActive()
+            && get(/databases/$(database)/documents/tickets/$(ticketId)).data.requesterId == request.auth.uid
+            && resource.data.visibility == 'public'
           );
+
+        // IT can create any comment. The requester can only create public comments.
+        allow create: if isIT()
+          || (
+            isActive()
+            && get(/databases/$(database)/documents/tickets/$(ticketId)).data.requesterId == request.auth.uid
+            && request.resource.data.visibility == 'public'
+          );
+
         allow update, delete: if isAdmin();
       }
+
+      // Internal IT notes
+      match /internalNotes/{noteId} {
+        allow read, create, update, delete: if isIT();
+      }
+
+      // Ticket activity log
+      match /activityLog/{logId} {
+        allow read: if isIT()
+          || (
+            isActive()
+            && get(/databases/$(database)/documents/tickets/$(ticketId)).data.requesterId == request.auth.uid
+          );
+
+        allow create: if isIT()
+          || (
+            isActive()
+            && get(/databases/$(database)/documents/tickets/$(ticketId)).data.requesterId == request.auth.uid
+          );
+
+        allow update, delete: if false;
+      }
+    }
+
+    // Notifications
+    match /notifications/{notificationId} {
+      allow read, update: if isActive()
+        && resource.data.userId == request.auth.uid;
+
+      allow create: if isIT();
+
+      allow delete: if isAdmin();
+    }
+
+    // Settings
+    match /settings/{settingId} {
+      allow read: if isActive();
+      allow create, update, delete: if isAdmin();
     }
   }
 }

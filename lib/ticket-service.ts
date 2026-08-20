@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { db, storage } from './firebase';
-import type { Attachment, CommentVisibility, Priority, Ticket, TicketStatus, UserProfile } from './types';
+import type { Attachment, CommentVisibility, OnboardingDetails, Priority, Ticket, TicketStatus, UserProfile } from './types';
 
 export async function uploadTicketFiles(ticketId: string, files: File[]): Promise<Attachment[]> {
   const uploaded: Attachment[] = [];
@@ -34,6 +34,7 @@ export async function createTicket(input: {
   department: string;
   files: File[];
   requester: UserProfile;
+  onboarding?: OnboardingDetails;
 }) {
   const ticketNo = `IT-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
   const ref = await addDoc(collection(db, 'tickets'), {
@@ -48,6 +49,7 @@ export async function createTicket(input: {
     requesterName: input.requester.name,
     requesterEmail: input.requester.email,
     attachments: [],
+    ...(input.onboarding ? { onboarding: input.onboarding } : {}),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   });

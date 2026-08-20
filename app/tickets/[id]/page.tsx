@@ -92,6 +92,21 @@ export default function TicketDetailsPage() {
                   </div>
                 </div>
               )}
+              {ticket.onboarding && (
+                <div className="mt-6">
+                  <h3 className="font-bold text-lazem-teal">Onboarding details</h3>
+                  <dl className="mt-3 grid gap-3 rounded-3xl bg-slate-50 p-5 text-sm sm:grid-cols-2">
+                    <OnboardingRow label="First name (Arabic)" value={ticket.onboarding.firstNameAr} />
+                    <OnboardingRow label="Last name (Arabic)" value={ticket.onboarding.lastNameAr} />
+                    <OnboardingRow label="First name (English)" value={ticket.onboarding.firstNameEn} />
+                    <OnboardingRow label="Last name (English)" value={ticket.onboarding.lastNameEn} />
+                    <OnboardingRow label="Job title (Arabic)" value={ticket.onboarding.jobTitleAr} />
+                    <OnboardingRow label="Job title (English)" value={ticket.onboarding.jobTitleEn} />
+                    <OnboardingRow label="Mobile number" value={ticket.onboarding.mobile} />
+                    <OnboardingRow label="Personal email" value={ticket.onboarding.personalEmail} />
+                  </dl>
+                </div>
+              )}
             </div>
 
             <div className="card">
@@ -177,4 +192,8 @@ export default function TicketDetailsPage() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return <div className="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt className="text-slate-500">{label}</dt><dd className="text-right font-semibold text-slate-700">{value}</dd></div>;
+}
+
+function OnboardingRow({ label, value }: { label: string; value: string }) {
+  return <div><dt className="text-xs font-semibold uppercase text-slate-400">{label}</dt><dd className="mt-1 font-semibold text-slate-700">{value}</dd></div>;
 }

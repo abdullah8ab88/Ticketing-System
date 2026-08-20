@@ -25,6 +25,17 @@ export type Attachment = {
   path: string;
 };
 
+export type OnboardingDetails = {
+  firstNameAr: string;
+  lastNameAr: string;
+  firstNameEn: string;
+  lastNameEn: string;
+  jobTitleAr: string;
+  jobTitleEn: string;
+  mobile: string;
+  personalEmail: string;
+};
+
 export type Ticket = {
   id: string;
   ticketNo: string;
@@ -40,6 +51,7 @@ export type Ticket = {
   assignedToId?: string;
   assignedToName?: string;
   attachments?: Attachment[];
+  onboarding?: OnboardingDetails;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
   closedAt?: Timestamp;
