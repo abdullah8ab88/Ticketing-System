@@ -53,10 +53,13 @@ service cloud.firestore {
         || (isActive() && resource.data.requesterId == request.auth.uid);
 
       // Active users can create tickets only for themselves.
-      // Onboarding tickets can only be created by HR department staff.
+      // Onboarding/Offboarding tickets can only be created by HR department staff.
       allow create: if isActive()
         && request.resource.data.requesterId == request.auth.uid
-        && (request.resource.data.category != 'Onboarding' || myUserDoc().data.department == 'HR');
+        && (
+          !(request.resource.data.category in ['Onboarding', 'Offboarding'])
+          || myUserDoc().data.department == 'HR'
+        );
 
       // IT can update any ticket.
       // Staff can only update limited fields on their own open ticket.

@@ -5,11 +5,12 @@ import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { ProtectedRoute } from '@/components/protected-route';
 import { useAuth } from '@/lib/auth-context';
+import { Plus, X } from 'lucide-react';
 import { createTicket } from '@/lib/ticket-service';
-import type { OnboardingDetails, Priority } from '@/lib/types';
+import type { PersonDetails, Priority } from '@/lib/types';
 import { categories, departments } from '@/lib/utils';
 
-const EMPTY_ONBOARDING: OnboardingDetails = {
+const EMPTY_PERSON: PersonDetails = {
   firstNameAr: '',
   lastNameAr: '',
   firstNameEn: '',
@@ -45,11 +46,23 @@ export default function NewTicketPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
-  const [onboarding, setOnboarding] = useState<OnboardingDetails>(EMPTY_ONBOARDING);
+  const [people, setPeople] = useState<PersonDetails[]>([EMPTY_PERSON]);
 
-  const canRequestOnboarding = profile?.department === 'HR';
-  const categoryOptions = canRequestOnboarding ? [...categories, 'Onboarding'] : categories;
-  const isOnboarding = form.category === 'Onboarding';
+  const canRequestHr = profile?.department === 'HR';
+  const categoryOptions = canRequestHr ? [...categories, 'Onboarding', 'Offboarding'] : categories;
+  const isHrRequest = form.category === 'Onboarding' || form.category === 'Offboarding';
+
+  function updatePerson(index: number, patch: Partial<PersonDetails>) {
+    setPeople((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)));
+  }
+
+  function addPerson() {
+    setPeople((prev) => [...prev, EMPTY_PERSON]);
+  }
+
+  function removePerson(index: number) {
+    setPeople((prev) => prev.filter((_, i) => i !== index));
+  }
 
   /**
    * IMPORTANT:
@@ -102,8 +115,8 @@ export default function NewTicketPage() {
       return;
     }
 
-    if (isOnboarding && Object.values(onboarding).some((v) => !v.trim())) {
-      setErr('Please complete all onboarding fields.');
+    if (isHrRequest && people.some((p) => Object.values(p).some((v) => !v.trim()))) {
+      setErr('Please complete all fields for every person.');
       return;
     }
 
@@ -115,7 +128,7 @@ export default function NewTicketPage() {
         ...form,
         files,
         requester: profile,
-        onboarding: isOnboarding ? onboarding : undefined,
+        people: isHrRequest ? people : undefined,
       });
 
       router.push(`/tickets/${id}`);
@@ -240,44 +253,77 @@ export default function NewTicketPage() {
             </div>
           </div>
 
-          {isOnboarding && (
+          {isHrRequest && (
             <div className="mt-6 border-t border-slate-100 pt-6">
-              <h3 className="font-bold text-lazem-teal">Onboarding details</h3>
-              <p className="mt-1 text-xs text-slate-500">Provide the new employee's information for account setup.</p>
-              <div className="mt-4 grid gap-5 md:grid-cols-2">
-                <div>
-                  <label className="label">First name (Arabic)</label>
-                  <input className="input" value={onboarding.firstNameAr} onChange={(e) => setOnboarding({ ...onboarding, firstNameAr: e.target.value })} required />
-                </div>
-                <div>
-                  <label className="label">Last name (Arabic)</label>
-                  <input className="input" value={onboarding.lastNameAr} onChange={(e) => setOnboarding({ ...onboarding, lastNameAr: e.target.value })} required />
-                </div>
-                <div>
-                  <label className="label">First name (English)</label>
-                  <input className="input" value={onboarding.firstNameEn} onChange={(e) => setOnboarding({ ...onboarding, firstNameEn: e.target.value })} required />
-                </div>
-                <div>
-                  <label className="label">Last name (English)</label>
-                  <input className="input" value={onboarding.lastNameEn} onChange={(e) => setOnboarding({ ...onboarding, lastNameEn: e.target.value })} required />
-                </div>
-                <div>
-                  <label className="label">Job title (Arabic)</label>
-                  <input className="input" value={onboarding.jobTitleAr} onChange={(e) => setOnboarding({ ...onboarding, jobTitleAr: e.target.value })} required />
-                </div>
-                <div>
-                  <label className="label">Job title (English)</label>
-                  <input className="input" value={onboarding.jobTitleEn} onChange={(e) => setOnboarding({ ...onboarding, jobTitleEn: e.target.value })} required />
-                </div>
-                <div>
-                  <label className="label">Mobile number</label>
-                  <input className="input" type="tel" value={onboarding.mobile} onChange={(e) => setOnboarding({ ...onboarding, mobile: e.target.value })} required />
-                </div>
-                <div>
-                  <label className="label">Personal email</label>
-                  <input className="input" type="email" value={onboarding.personalEmail} onChange={(e) => setOnboarding({ ...onboarding, personalEmail: e.target.value })} required />
-                </div>
+              <h3 className="font-bold text-lazem-teal">{form.category} details</h3>
+              <p className="mt-1 text-xs text-slate-500">
+                {form.category === 'Onboarding'
+                  ? "Provide each new employee's information for account setup."
+                  : 'Provide each employee\'s information to deactivate their accounts.'}
+              </p>
+
+              <div className="mt-4 space-y-5">
+                {people.map((person, index) => (
+                  <div key={index} className="rounded-3xl border border-slate-100 p-5">
+                    <div className="mb-4 flex items-center justify-between">
+                      <span className="text-sm font-bold text-lazem-teal">Person {index + 1}</span>
+                      {people.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removePerson(index)}
+                          className="text-slate-400 hover:text-rose-600"
+                          aria-label="Remove person"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <div>
+                        <label className="label">First name (Arabic)</label>
+                        <input className="input" value={person.firstNameAr} onChange={(e) => updatePerson(index, { firstNameAr: e.target.value })} required />
+                      </div>
+                      <div>
+                        <label className="label">Last name (Arabic)</label>
+                        <input className="input" value={person.lastNameAr} onChange={(e) => updatePerson(index, { lastNameAr: e.target.value })} required />
+                      </div>
+                      <div>
+                        <label className="label">First name (English)</label>
+                        <input className="input" value={person.firstNameEn} onChange={(e) => updatePerson(index, { firstNameEn: e.target.value })} required />
+                      </div>
+                      <div>
+                        <label className="label">Last name (English)</label>
+                        <input className="input" value={person.lastNameEn} onChange={(e) => updatePerson(index, { lastNameEn: e.target.value })} required />
+                      </div>
+                      <div>
+                        <label className="label">Job title (Arabic)</label>
+                        <input className="input" value={person.jobTitleAr} onChange={(e) => updatePerson(index, { jobTitleAr: e.target.value })} required />
+                      </div>
+                      <div>
+                        <label className="label">Job title (English)</label>
+                        <input className="input" value={person.jobTitleEn} onChange={(e) => updatePerson(index, { jobTitleEn: e.target.value })} required />
+                      </div>
+                      <div>
+                        <label className="label">Mobile number</label>
+                        <input className="input" type="tel" value={person.mobile} onChange={(e) => updatePerson(index, { mobile: e.target.value })} required />
+                      </div>
+                      <div>
+                        <label className="label">Personal email</label>
+                        <input className="input" type="email" value={person.personalEmail} onChange={(e) => updatePerson(index, { personalEmail: e.target.value })} required />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
+
+              <button
+                type="button"
+                onClick={addPerson}
+                className="btn-secondary mt-4 flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add another person
+              </button>
             </div>
           )}
 

@@ -92,19 +92,28 @@ export default function TicketDetailsPage() {
                   </div>
                 </div>
               )}
-              {ticket.onboarding && (
+              {!!ticket.people?.length && (
                 <div className="mt-6">
-                  <h3 className="font-bold text-lazem-teal">Onboarding details</h3>
-                  <dl className="mt-3 grid gap-3 rounded-3xl bg-slate-50 p-5 text-sm sm:grid-cols-2">
-                    <OnboardingRow label="First name (Arabic)" value={ticket.onboarding.firstNameAr} />
-                    <OnboardingRow label="Last name (Arabic)" value={ticket.onboarding.lastNameAr} />
-                    <OnboardingRow label="First name (English)" value={ticket.onboarding.firstNameEn} />
-                    <OnboardingRow label="Last name (English)" value={ticket.onboarding.lastNameEn} />
-                    <OnboardingRow label="Job title (Arabic)" value={ticket.onboarding.jobTitleAr} />
-                    <OnboardingRow label="Job title (English)" value={ticket.onboarding.jobTitleEn} />
-                    <OnboardingRow label="Mobile number" value={ticket.onboarding.mobile} />
-                    <OnboardingRow label="Personal email" value={ticket.onboarding.personalEmail} />
-                  </dl>
+                  <h3 className="font-bold text-lazem-teal">{ticket.category} details</h3>
+                  <div className="mt-3 space-y-4">
+                    {ticket.people.map((person, index) => (
+                      <div key={index} className="rounded-3xl bg-slate-50 p-5">
+                        {ticket.people!.length > 1 && (
+                          <div className="mb-3 text-xs font-bold uppercase text-slate-400">Person {index + 1}</div>
+                        )}
+                        <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                          <OnboardingRow label="First name (Arabic)" value={person.firstNameAr} />
+                          <OnboardingRow label="Last name (Arabic)" value={person.lastNameAr} />
+                          <OnboardingRow label="First name (English)" value={person.firstNameEn} />
+                          <OnboardingRow label="Last name (English)" value={person.lastNameEn} />
+                          <OnboardingRow label="Job title (Arabic)" value={person.jobTitleAr} />
+                          <OnboardingRow label="Job title (English)" value={person.jobTitleEn} />
+                          <OnboardingRow label="Mobile number" value={person.mobile} />
+                          <OnboardingRow label="Personal email" value={person.personalEmail} />
+                        </dl>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

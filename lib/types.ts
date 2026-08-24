@@ -25,7 +25,7 @@ export type Attachment = {
   path: string;
 };
 
-export type OnboardingDetails = {
+export type PersonDetails = {
   firstNameAr: string;
   lastNameAr: string;
   firstNameEn: string;
@@ -51,7 +51,7 @@ export type Ticket = {
   assignedToId?: string;
   assignedToName?: string;
   attachments?: Attachment[];
-  onboarding?: OnboardingDetails;
+  people?: PersonDetails[];
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
   closedAt?: Timestamp;
