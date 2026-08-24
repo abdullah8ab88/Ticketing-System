@@ -243,7 +243,7 @@ export default function NewTicketPage() {
           {isOnboarding && (
             <div className="mt-6 border-t border-slate-100 pt-6">
               <h3 className="font-bold text-lazem-teal">Onboarding details</h3>
-              <p className="mt-1 text-xs text-slate-500">Provide the new employee's information for account setup.</p>
+              <p className="mt-1 text-xs text-slate-500">Provide the new employee&apos;s information for account setup.</p>
               <div className="mt-4 grid gap-5 md:grid-cols-2">
                 <div>
                   <label className="label">First name (Arabic)</label>
