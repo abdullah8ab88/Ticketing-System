@@ -21,12 +21,19 @@ export default function LoginPage() {
   const [linkPassword, setLinkPassword] = useState('');
   const [linkLoading, setLinkLoading] = useState(false);
 
+  function destinationAfterLogin() {
+    const requested = new URLSearchParams(window.location.search).get('next');
+    return requested?.startsWith('/') && !requested.startsWith('//')
+      ? requested
+      : '/dashboard';
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true); setErr(''); setMsg('');
     try {
       await login(email, password);
-      router.push('/dashboard');
+      router.push(destinationAfterLogin());
     } catch (error: any) {
       setErr(error.message || 'Login failed');
     } finally {
@@ -38,7 +45,7 @@ export default function LoginPage() {
     setMsLoading(true); setErr(''); setMsg(''); setLinkPrompt(null);
     try {
       await loginWithMicrosoft();
-      router.push('/dashboard');
+      router.push(destinationAfterLogin());
     } catch (error: any) {
       if (error.code === 'auth/account-exists-with-different-credential') {
         const pendingCredential = OAuthProvider.credentialFromError(error);
@@ -62,7 +69,7 @@ export default function LoginPage() {
     setLinkLoading(true); setErr('');
     try {
       await linkMicrosoftAccount(linkPrompt.email, linkPassword, linkPrompt.credential);
-      router.push('/dashboard');
+      router.push(destinationAfterLogin());
     } catch (error: any) {
       setErr(error.message || 'Could not link Microsoft account');
     } finally {

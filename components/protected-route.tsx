@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
@@ -9,10 +9,14 @@ import { useAuth } from '@/lib/auth-context';
 export function ProtectedRoute({ children, requireIT = false, requireAdmin = false }: { children: React.ReactNode; requireIT?: boolean; requireAdmin?: boolean }) {
   const { firebaseUser, profile, loading, isIT, isAdmin } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !firebaseUser) router.replace('/login');
-  }, [loading, firebaseUser, router]);
+    if (!loading && !firebaseUser) {
+      const next = pathname.startsWith('/') ? pathname : '/dashboard';
+      router.replace(`/login?next=${encodeURIComponent(next)}`);
+    }
+  }, [loading, firebaseUser, pathname, router]);
 
   if (loading || !firebaseUser || !profile) {
     return <div className="flex min-h-screen items-center justify-center text-lazem-teal">Loading...</div>;
