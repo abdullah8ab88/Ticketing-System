@@ -53,6 +53,18 @@ export const departments = [
   'Management'
 ];
 
+export const employeeDepartments = [
+  'Medical Services Delivery',
+  'Service Prep & Supply Chain',
+  'Control Command Centre',
+  'Human Resources',
+  'Finance',
+  'Information Technology',
+  'Sales / Business Development',
+  'Management',
+  'Other'
+];
+
 export const statuses = [
   'New',
   'Assigned',

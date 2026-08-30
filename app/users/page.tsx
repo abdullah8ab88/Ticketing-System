@@ -7,7 +7,7 @@ import { ProtectedRoute } from '@/components/protected-route';
 import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
 import type { Role, UserProfile } from '@/lib/types';
-import { departments } from '@/lib/utils';
+import { employeeDepartments } from '@/lib/utils';
 
 export default function UsersPage() {
   const { profile } = useAuth();
@@ -36,16 +36,27 @@ export default function UsersPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="text-xs uppercase text-slate-400">
-                <tr><th className="py-3">User</th><th>Department</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+                <tr><th className="py-3">User</th><th>Department</th><th>Department verification</th><th>Role</th><th>Account</th><th>Actions</th></tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {users.map((u) => (
                   <tr key={u.uid} className="hover:bg-slate-50">
                     <td className="py-4"><div className="font-semibold text-lazem-teal">{u.name}</div><div className="text-slate-500">{u.email}</div></td>
                     <td>
-                      <select className="input min-w-40" value={u.department} onChange={(e) => updateUser(u.uid, { department: e.target.value })}>
-                        {departments.map((d) => <option key={d}>{d}</option>)}
+                      <select className="input min-w-48" value={u.department} onChange={(e) => updateUser(u.uid, { department: e.target.value, departmentVerificationStatus: 'pending' })}>
+                        {u.department && !employeeDepartments.includes(u.department) && <option value={u.department}>{u.department}</option>}
+                        {!u.department && <option value="">Not selected</option>}
+                        {employeeDepartments.map((d) => <option key={d}>{d}</option>)}
                       </select>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => updateUser(u.uid, { departmentVerificationStatus: u.departmentVerificationStatus === 'pending' ? 'verified' : 'pending' })}
+                        disabled={!u.department}
+                        className={`badge disabled:opacity-40 ${(u.departmentVerificationStatus ?? 'verified') === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}
+                      >
+                        {(u.departmentVerificationStatus ?? 'verified') === 'pending' ? 'Verify department' : 'Verified'}
+                      </button>
                     </td>
                     <td>
                       <select className="input min-w-40" value={u.role} disabled={u.uid === profile?.uid} onChange={(e) => updateUser(u.uid, { role: e.target.value as Role })}>
@@ -65,7 +76,7 @@ export default function UsersPage() {
                     </td>
                   </tr>
                 ))}
-                {!users.length && <tr><td colSpan={5} className="py-10 text-center text-slate-500">No users found.</td></tr>}
+                {!users.length && <tr><td colSpan={6} className="py-10 text-center text-slate-500">No users found.</td></tr>}
               </tbody>
             </table>
           </div>

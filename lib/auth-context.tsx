@@ -69,12 +69,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const snap = await getDoc(ref);
 
         if (!snap.exists()) {
+          const isMicrosoftUser = user.providerData.some((provider) => provider.providerId === 'microsoft.com');
           const newProfile: UserProfile = {
             uid: user.uid,
             name: user.displayName || user.email?.split('@')[0] || 'New User',
             email: user.email || '',
             role: 'staff',
-            department: 'IT',
+            department: isMicrosoftUser ? '' : 'IT',
+            departmentVerificationStatus: isMicrosoftUser ? 'pending' : 'verified',
+            departmentSelectionRequired: isMicrosoftUser,
             active: AUTO_ACTIVATE_NEW_USERS,
             pending: !AUTO_ACTIVATE_NEW_USERS,
           };
@@ -97,6 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile({
             ...data,
             active: data.active ?? data.pending === false,
+            departmentVerificationStatus: data.departmentVerificationStatus ?? 'verified',
+            departmentSelectionRequired: data.departmentSelectionRequired ?? false,
           });
         }
       } catch (error) {

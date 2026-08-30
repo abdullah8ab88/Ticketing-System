@@ -4,6 +4,7 @@ export type Role = 'admin' | 'it_manager' | 'agent' | 'staff';
 export type Priority = 'Low' | 'Medium' | 'High' | 'Urgent';
 export type TicketStatus = 'New' | 'Assigned' | 'In Progress' | 'Waiting for User' | 'Waiting for Vendor' | 'Resolved' | 'Closed' | 'Cancelled';
 export type CommentVisibility = 'public' | 'internal';
+export type DepartmentVerificationStatus = 'pending' | 'verified';
 
 
 
@@ -13,6 +14,8 @@ export type UserProfile = {
   email: string;
   role: Role;
   department: string;
+  departmentVerificationStatus?: DepartmentVerificationStatus;
+  departmentSelectionRequired?: boolean;
   active: boolean;
   pending: boolean;
   createdAt?: any;
