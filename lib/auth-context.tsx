@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AuthCredential,
   OAuthProvider,
@@ -13,8 +13,9 @@ import {
   signInWithPopup,
   signOut,
 } from 'firebase/auth';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
+import { ensureUserProfile, normalizeEmail } from './user-profile';
 import type { Role, UserProfile } from './types';
 
 type AuthContextValue = {
@@ -32,31 +33,25 @@ type AuthContextValue = {
   }) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  saveDepartment: (department: string) => Promise<void>;
   isIT: boolean;
   isAdmin: boolean;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-/**
- * TESTING MODE:
- * New registered users are active automatically.
- *
- * For production later, change:
- * active: true  -> active: false
- * pending: false -> pending: true
- */
-const AUTO_ACTIVATE_NEW_USERS = true;
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const registration = useRef<Promise<void> | null>(null);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       setLoading(true);
       setFirebaseUser(user);
+      setProfile(null);
 
       if (!user) {
         setProfile(null);
@@ -65,50 +60,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const ref = doc(db, 'users', user.uid);
-        const snap = await getDoc(ref);
-
-        if (!snap.exists()) {
-          const isMicrosoftUser = user.providerData.some((provider) => provider.providerId === 'microsoft.com');
-          const newProfile: UserProfile = {
-            uid: user.uid,
-            name: user.displayName || user.email?.split('@')[0] || 'New User',
-            email: user.email || '',
-            role: 'staff',
-            department: isMicrosoftUser ? '' : 'IT',
-            departmentVerificationStatus: isMicrosoftUser ? 'pending' : 'verified',
-            departmentSelectionRequired: isMicrosoftUser,
-            active: AUTO_ACTIVATE_NEW_USERS,
-            pending: !AUTO_ACTIVATE_NEW_USERS,
-          };
-
-          await setDoc(ref, {
-            ...newProfile,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          });
-
-          setProfile(newProfile);
-        } else {
-          const data = snap.data() as UserProfile;
-
-          /**
-           * Safety fallback:
-           * If old users do not have active field, we keep profile readable.
-           * But you should still add active:true in Firestore for existing approved users.
-           */
-          setProfile({
-            ...data,
-            active: data.active ?? data.pending === false,
-            departmentVerificationStatus: data.departmentVerificationStatus ?? 'verified',
-            departmentSelectionRequired: data.departmentSelectionRequired ?? false,
-          });
-        }
+        await registration.current;
+        const loaded = await ensureUserProfile(user);
+        if (auth.currentUser?.uid === user.uid) setProfile(loaded);
       } catch (error) {
         console.error('Load user profile error:', error);
-        setProfile(null);
+        if (auth.currentUser?.uid === user.uid) setProfile(null);
       } finally {
-        setLoading(false);
+        if (auth.currentUser?.uid === user.uid) setLoading(false);
       }
     });
 
@@ -124,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
 
       login: async (email, password) => {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmailAndPassword(auth, normalizeEmail(email), password);
       },
 
       loginWithMicrosoft: async () => {
@@ -135,35 +94,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
 
       linkMicrosoftAccount: async (email, password, pendingCredential) => {
-        const result = await signInWithEmailAndPassword(auth, email, password);
+        const result = await signInWithEmailAndPassword(auth, normalizeEmail(email), password);
         await linkWithCredential(result.user, pendingCredential);
       },
 
       register: async ({ name, email, password, department }) => {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        let release!: () => void;
+        registration.current = new Promise<void>(resolve => { release = resolve; });
+        setLoading(true);
+        try {
+          const cred = await createUserWithEmailAndPassword(auth, normalizeEmail(email), password);
+          const created = await ensureUserProfile(cred.user, { name, department });
+          if (auth.currentUser?.uid === cred.user.uid) setProfile(created);
+        } finally {
+          release();
+          registration.current = null;
+          setLoading(false);
+        }
+      },
 
-        const newProfile: UserProfile = {
-          uid: cred.user.uid,
-          name,
-          email,
-          role: 'staff',
-          department,
-          active: AUTO_ACTIVATE_NEW_USERS,
-          pending: !AUTO_ACTIVATE_NEW_USERS,
-        };
-
-        await setDoc(doc(db, 'users', cred.user.uid), {
-          ...newProfile,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-
-        setProfile(newProfile);
+      saveDepartment: async (department) => {
+        const user = auth.currentUser;
+        if (!user) throw new Error('Please sign in again.');
+        const selected = department.trim();
+        if (!selected || selected.length > 120) throw new Error('Enter a department of 1-120 characters.');
+        await ensureUserProfile(user);
+        const patch = { department: selected, departmentVerificationStatus: 'pending' as const,
+          departmentSelectionRequired: false };
+        await updateDoc(doc(db, 'users', user.uid), { ...patch, updatedAt: serverTimestamp() });
+        if (auth.currentUser?.uid === user.uid) setProfile(current => current ? { ...current, ...patch } : current);
       },
 
       logout: () => signOut(auth),
 
-      resetPassword: (email) => sendPasswordResetEmail(auth, email),
+      resetPassword: (email) => sendPasswordResetEmail(auth, normalizeEmail(email)),
 
       isIT:
         role === 'admin' ||

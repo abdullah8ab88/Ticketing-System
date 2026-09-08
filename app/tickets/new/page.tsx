@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth-context';
 import { Plus, X } from 'lucide-react';
 import { createTicket } from '@/lib/ticket-service';
 import type { PersonDetails, Priority } from '@/lib/types';
+import Link from 'next/link';
 import { categories, departments } from '@/lib/utils';
 
 const EMPTY_PERSON: PersonDetails = {
@@ -48,7 +49,7 @@ export default function NewTicketPage() {
   const [err, setErr] = useState('');
   const [people, setPeople] = useState<PersonDetails[]>([EMPTY_PERSON]);
 
-  const canRequestHr = profile?.department === 'HR';
+  const canRequestHr = profile?.department === 'HR' && profile?.departmentVerificationStatus !== 'pending';
   const categoryOptions = canRequestHr ? [...categories, 'Onboarding', 'Offboarding'] : categories;
   const isHrRequest = form.category === 'Onboarding' || form.category === 'Offboarding';
 
@@ -144,6 +145,7 @@ export default function NewTicketPage() {
     <ProtectedRoute>
       <AppShell title="New Ticket" subtitle="Create a new IT support request">
         <form onSubmit={onSubmit} className="card max-w-4xl">
+          {profile?.departmentSelectionRequired && <div role="status" className="mb-5 rounded-2xl bg-amber-50 p-3 text-sm text-amber-700">Select a department for this ticket below. Saving your profile department is optional. <Link href="/onboarding" className="font-semibold underline">Update profile department</Link></div>}
           <div className="grid gap-5 md:grid-cols-2">
             <div className="md:col-span-2">
               <label className="label">Title</label>
@@ -196,7 +198,7 @@ export default function NewTicketPage() {
             <div>
               <label className="label">Department</label>
 
-              {isIT ? (
+              {isIT || !profile?.department ? (
                 <select
                   className="input"
                   value={form.department}

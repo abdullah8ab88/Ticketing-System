@@ -18,19 +18,11 @@ export function ProtectedRoute({ children, requireIT = false, requireAdmin = fal
     }
   }, [loading, firebaseUser, pathname, router]);
 
-  useEffect(() => {
-    if (!loading && firebaseUser && profile?.departmentSelectionRequired && pathname !== '/onboarding') {
-      router.replace(`/onboarding?next=${encodeURIComponent(pathname)}`);
-    }
-  }, [loading, firebaseUser, profile?.departmentSelectionRequired, pathname, router]);
-
-  if (loading || !firebaseUser || !profile) {
+  if (loading || !firebaseUser) {
     return <div className="flex min-h-screen items-center justify-center text-lazem-teal">Loading...</div>;
   }
 
-  if (profile.departmentSelectionRequired && pathname !== '/onboarding') {
-    return <div className="flex min-h-screen items-center justify-center text-lazem-teal">Preparing your profile...</div>;
-  }
+  if (!profile) return <div className="card m-6" role="alert"><p>We could not load your profile. Please retry.</p><button className="btn-primary mt-4" onClick={() => window.location.reload()}>Retry</button></div>;
 
   if (profile.pending) {
     return (

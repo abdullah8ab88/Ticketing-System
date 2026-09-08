@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { AppShell } from '@/components/app-shell';
 import { ProtectedRoute } from '@/components/protected-route';
@@ -13,9 +13,17 @@ export default function UsersPage() {
   const { profile } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
 
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const deleteDialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (deleteTarget) deleteDialog.current?.showModal();
+  }, [deleteTarget]);
+
   useEffect(() => {
     const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-    return onSnapshot(q, (snap) => setUsers(snap.docs.map((d) => d.data() as UserProfile)));
+    return onSnapshot(q, (snap) => setUsers(snap.docs.map((d) => ({ ...d.data(), uid: d.id }) as UserProfile)));
   }, []);
 
   async function updateUser(uid: string, patch: Partial<UserProfile>) {
@@ -24,8 +32,15 @@ export default function UsersPage() {
 
   async function deleteUser(uid: string) {
     if (uid === profile?.uid) return;
-    if (confirm('Delete this user profile? Firebase Auth user must be deleted manually if required.')) {
+    setDeleting(true);
+    setDeleteError('');
+    try {
       await deleteDoc(doc(db, 'users', uid));
+      setDeleteTarget(null);
+    } catch {
+      setDeleteError('Could not delete this profile. Please try again.');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -72,7 +87,7 @@ export default function UsersPage() {
                       </button>
                     </td>
                     <td>
-                      <button disabled={u.uid === profile?.uid} onClick={() => deleteUser(u.uid)} className="btn-secondary py-2 text-rose-700 disabled:opacity-30">Delete</button>
+                      <button disabled={u.uid === profile?.uid} onClick={() => { setDeleteError(''); setDeleteTarget(u.uid); }} className="btn-secondary py-2 text-rose-700 disabled:opacity-30">Delete</button>
                     </td>
                   </tr>
                 ))}
@@ -81,6 +96,14 @@ export default function UsersPage() {
             </table>
           </div>
         </div>
+        {deleteTarget && <dialog ref={deleteDialog} aria-modal="true" aria-labelledby="delete-title" className="fixed inset-0 z-50 m-0 flex h-full w-full items-center justify-center bg-black/40 p-6" onCancel={(event) => { event.preventDefault(); if (!deleting) setDeleteTarget(null); }}>
+          <div className="card max-w-md">
+            <h2 id="delete-title" className="text-xl font-bold text-lazem-teal">Delete user profile?</h2>
+            <p className="mt-3 text-sm text-slate-600">The Firebase Authentication account must be deleted separately if required.</p>
+            {deleteError && <p role="alert" className="mt-3 text-rose-700">{deleteError}</p>}
+            <div className="mt-5 flex gap-3"><button autoFocus className="btn-secondary" disabled={deleting} onClick={() => setDeleteTarget(null)}>Cancel</button><button className="btn-primary" disabled={deleting} onClick={() => deleteUser(deleteTarget)}>{deleting ? 'Deleting...' : 'Delete profile'}</button></div>
+          </div>
+        </dialog>}
       </AppShell>
     </ProtectedRoute>
   );

@@ -11,7 +11,8 @@ import {
   where
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { db, storage } from './firebase';
+import { normalizeEmail } from './user-profile';
+import { auth, db, storage } from './firebase';
 import type { Attachment, CommentVisibility, PersonDetails, Priority, Ticket, TicketStatus, UserProfile } from './types';
 
 export async function uploadTicketFiles(ticketId: string, files: File[]): Promise<Attachment[]> {
@@ -36,6 +37,7 @@ export async function createTicket(input: {
   requester: UserProfile;
   people?: PersonDetails[];
 }) {
+  if (!auth.currentUser || auth.currentUser.uid !== input.requester.uid) throw new Error('Please sign in again.');
   const ticketNo = `IT-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
   const ref = await addDoc(collection(db, 'tickets'), {
     ticketNo,
@@ -45,9 +47,9 @@ export async function createTicket(input: {
     priority: input.priority,
     department: input.department,
     status: 'New' satisfies TicketStatus,
-    requesterId: input.requester.uid,
+    requesterId: auth.currentUser.uid,
     requesterName: input.requester.name,
-    requesterEmail: input.requester.email,
+    requesterEmail: normalizeEmail(input.requester.email),
     attachments: [],
     ...(input.people?.length ? { people: input.people } : {}),
     createdAt: serverTimestamp(),

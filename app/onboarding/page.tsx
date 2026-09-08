@@ -1,11 +1,11 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Building2 } from 'lucide-react';
 import { ProtectedRoute } from '@/components/protected-route';
 import { useAuth } from '@/lib/auth-context';
-import { db } from '@/lib/firebase';
 import { employeeDepartments } from '@/lib/utils';
 
 function safeNext(value: string | null) {
@@ -13,7 +13,8 @@ function safeNext(value: string | null) {
 }
 
 export default function OnboardingPage() {
-  const { profile } = useAuth();
+  const { profile, saveDepartment } = useAuth();
+  const router = useRouter();
   const [department, setDepartment] = useState('');
   const [otherDepartment, setOtherDepartment] = useState('');
   const [saving, setSaving] = useState(false);
@@ -31,17 +32,12 @@ export default function OnboardingPage() {
     setSaving(true);
     setError('');
     try {
-      await updateDoc(doc(db, 'users', profile.uid), {
-        department: selectedDepartment,
-        departmentVerificationStatus: 'pending',
-        departmentSelectionRequired: false,
-        updatedAt: serverTimestamp(),
-      });
+      await saveDepartment(selectedDepartment);
       const next = new URLSearchParams(window.location.search).get('next');
-      window.location.assign(safeNext(next));
+      router.push(safeNext(next));
     } catch (err) {
       console.error('Save department error:', err);
-      setError('We could not save your department. Please try again.');
+      setError('We could not save your department. You can continue and select a department on your ticket.');
       setSaving(false);
     }
   }
@@ -71,8 +67,9 @@ export default function OnboardingPage() {
             </>
           )}
 
-          {error && <p className="mt-4 text-sm font-medium text-rose-600">{error}</p>}
+          {error && <p role="alert" className="mt-4 text-sm font-medium text-rose-600">{error}</p>}
           <button className="btn-primary mt-6 w-full" disabled={saving}>{saving ? 'Saving...' : 'Continue to create ticket'}</button>
+          <Link href="/tickets/new" className="btn-secondary mt-4 block text-center">Continue without saving department</Link>
           <p className="mt-4 text-center text-xs text-slate-500">Department verification does not prevent you from submitting tickets.</p>
         </form>
       </main>
