@@ -41,8 +41,22 @@ service cloud.firestore {
         && request.resource.data.active == true
         && request.resource.data.pending == false;
 
-      // Only admin can update users, roles, and activation.
-      allow update, delete: if isAdmin();
+      // Owners may submit department information, never roles or activation.
+      allow update: if isAdmin() || (isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email'])
+        && resource.data.email is string
+        && request.resource.data.email == resource.data.email.trim().lower())
+        || (isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'department', 'departmentVerificationStatus', 'departmentSelectionRequired', 'updatedAt'
+        ])
+        && request.resource.data.department is string
+        && request.resource.data.department.size() > 0
+        && request.resource.data.department.size() <= 120
+        && request.resource.data.departmentVerificationStatus == 'pending'
+        && request.resource.data.departmentSelectionRequired == false
+        && request.resource.data.updatedAt == request.time);
+      allow delete: if isAdmin();
     }
 
     // Tickets
@@ -58,7 +72,8 @@ service cloud.firestore {
         && request.resource.data.requesterId == request.auth.uid
         && (
           !(request.resource.data.category in ['Onboarding', 'Offboarding'])
-          || myUserDoc().data.department == 'HR'
+          || (myUserDoc().data.department == 'HR'
+            && myUserDoc().data.get('departmentVerificationStatus', 'verified') == 'verified')
         );
 
       // IT can update any ticket.
