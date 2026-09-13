@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
 import { addTicketComment, assignTicket, getAgents, updateTicketStatus } from '@/lib/ticket-service';
 import type { CommentVisibility, Ticket, TicketComment, TicketStatus, UserProfile } from '@/lib/types';
-import { priorityClass, statusClass, statuses } from '@/lib/utils';
+import { formatDateTime, priorityClass, statusClass, statuses } from '@/lib/utils';
 
 const TEAM_ASSIGNEE: UserProfile = {
   uid: 'team-abdullah-rashed',
@@ -189,6 +189,8 @@ export default function TicketDetailsPage() {
                 <Row label="Requester" value={ticket.requesterName} />
                 <Row label="Assigned" value={ticket.assignedToName || 'Unassigned'} />
                 <Row label="Email" value={ticket.requesterEmail} />
+                <Row label="Created" value={formatDateTime(ticket.createdAt)} />
+                <Row label="Last updated" value={formatDateTime(ticket.updatedAt)} />
               </dl>
               <Link href="/tickets" className="btn-secondary mt-6 w-full">Back to tickets</Link>
             </div>

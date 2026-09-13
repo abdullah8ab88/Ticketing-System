@@ -1,9 +1,16 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { format } from 'date-fns';
+import type { Timestamp } from 'firebase/firestore';
 import type { TicketStatus, Priority } from './types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+export function formatDateTime(timestamp?: Timestamp) {
+  if (!timestamp) return '—';
+  return format(timestamp.toDate(), 'MMM d, yyyy · h:mm a');
 }
 
 export function statusClass(status: TicketStatus) {

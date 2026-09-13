@@ -16,7 +16,7 @@ import { ProtectedRoute } from '@/components/protected-route';
 import { useAuth } from '@/lib/auth-context';
 import { db } from '@/lib/firebase';
 import type { Priority, Ticket, TicketStatus } from '@/lib/types';
-import { priorityClass, statusClass, statuses } from '@/lib/utils';
+import { formatDateTime, priorityClass, statusClass, statuses } from '@/lib/utils';
 
 export default function TicketsPage() {
   const router = useRouter();
@@ -164,6 +164,7 @@ export default function TicketsPage() {
                   <th>Category</th>
                   <th>Status</th>
                   <th>Priority</th>
+                  <th>Created</th>
 
                   {isIT && (
                     <>
@@ -202,6 +203,10 @@ export default function TicketsPage() {
                       </span>
                     </td>
 
+                    <td className="whitespace-nowrap text-slate-600">
+                      {formatDateTime(t.createdAt)}
+                    </td>
+
                     {isIT && (
                       <>
                         <td className="text-slate-600">
@@ -218,7 +223,7 @@ export default function TicketsPage() {
                 {!filtered.length && (
                   <tr>
                     <td
-                      colSpan={isIT ? 6 : 4}
+                      colSpan={isIT ? 7 : 5}
                       className="py-10 text-center text-slate-500"
                     >
                       No matching tickets.
