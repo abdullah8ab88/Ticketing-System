@@ -2,7 +2,7 @@ import type { Timestamp } from 'firebase/firestore';
 
 export type Role = 'admin' | 'it_manager' | 'agent' | 'staff';
 export type Priority = 'Low' | 'Medium' | 'High' | 'Urgent';
-export type TicketStatus = 'New' | 'Assigned' | 'In Progress' | 'Waiting for User' | 'Waiting for Vendor' | 'Resolved' | 'Closed' | 'Cancelled';
+export type TicketStatus = 'New' | 'In Progress' | 'Closed' | 'Cancelled';
 export type CommentVisibility = 'public' | 'internal';
 export type DepartmentVerificationStatus = 'pending' | 'verified';
 
@@ -66,5 +66,6 @@ export type TicketComment = {
   authorName: string;
   visibility: CommentVisibility;
   body: string;
+  attachments?: Attachment[];
   createdAt?: Timestamp;
 };

@@ -16,11 +16,7 @@ export function formatDateTime(timestamp?: Timestamp) {
 export function statusClass(status: TicketStatus) {
   switch (status) {
     case 'New': return 'status-new';
-    case 'Assigned': return 'status-assigned';
     case 'In Progress': return 'status-progress';
-    case 'Waiting for User':
-    case 'Waiting for Vendor': return 'status-waiting';
-    case 'Resolved': return 'status-resolved';
     case 'Closed': return 'status-closed';
     case 'Cancelled': return 'status-cancelled';
     default: return 'status-new';
@@ -74,11 +70,7 @@ export const employeeDepartments = [
 
 export const statuses = [
   'New',
-  'Assigned',
   'In Progress',
-  'Waiting for User',
-  'Waiting for Vendor',
-  'Resolved',
   'Closed',
   'Cancelled'
 ] as const;

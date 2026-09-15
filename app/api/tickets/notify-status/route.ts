@@ -7,7 +7,6 @@ import type { TicketStatus } from '@/lib/types';
 const STATUS_HEADINGS: Partial<Record<TicketStatus, string>> = {
   New: 'New ticket submitted',
   'In Progress': 'Your ticket is now being processed',
-  Resolved: 'Your ticket has been resolved',
   Closed: 'Your ticket has been closed',
   Cancelled: 'Your ticket has been cancelled',
 };
@@ -15,7 +14,6 @@ const STATUS_HEADINGS: Partial<Record<TicketStatus, string>> = {
 const STATUS_MESSAGES: Partial<Record<TicketStatus, string>> = {
   New: 'A new IT support ticket has been submitted and is awaiting review.',
   'In Progress': 'Our IT team has started working on your ticket.',
-  Resolved: 'Our IT team has marked your ticket as resolved.',
   Closed: 'Your ticket has been closed. If the issue comes back, feel free to open a new ticket.',
   Cancelled: 'Your ticket has been cancelled.',
 };

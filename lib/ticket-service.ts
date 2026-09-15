@@ -81,12 +81,16 @@ export async function addTicketComment(input: {
   author: UserProfile;
   body: string;
   visibility: CommentVisibility;
+  files?: File[];
 }) {
+  const attachments = input.files?.length ? await uploadTicketFiles(input.ticketId, input.files) : [];
+
   await addDoc(collection(db, 'tickets', input.ticketId, 'comments'), {
     authorId: input.author.uid,
     authorName: input.author.name,
     body: input.body,
     visibility: input.visibility,
+    ...(attachments.length ? { attachments } : {}),
     createdAt: serverTimestamp()
   });
   await updateDoc(doc(db, 'tickets', input.ticketId), { updatedAt: serverTimestamp() });
@@ -120,7 +124,6 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
 
 export async function assignTicket(ticketId: string, agent: UserProfile) {
   await updateDoc(doc(db, 'tickets', ticketId), {
-    status: 'Assigned' satisfies TicketStatus,
     assignedToId: agent.uid,
     assignedToName: agent.name,
     updatedAt: serverTimestamp()

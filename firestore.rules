@@ -93,7 +93,7 @@ allow update: if isIT()
         'attachments',
         'updatedAt'
       ])
-    && resource.data.status in ['New', 'Waiting for User']
+    && resource.data.status == 'New'
   );
 
       // Only admin can delete tickets.

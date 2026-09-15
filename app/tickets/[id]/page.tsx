@@ -12,6 +12,16 @@ import { addTicketComment, assignTicket, getAgents, updateTicketStatus } from '@
 import type { CommentVisibility, Ticket, TicketComment, TicketStatus, UserProfile } from '@/lib/types';
 import { formatDateTime, priorityClass, statusClass, statuses } from '@/lib/utils';
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+const ALLOWED_FILE_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/webp',
+  'application/pdf',
+];
+
 const TEAM_ASSIGNEE: UserProfile = {
   uid: 'team-abdullah-rashed',
   name: 'Abdullah & Rashed',
@@ -30,6 +40,8 @@ export default function TicketDetailsPage() {
   const [agents, setAgents] = useState<UserProfile[]>([]);
   const [comment, setComment] = useState('');
   const [visibility, setVisibility] = useState<CommentVisibility>('public');
+  const [commentFiles, setCommentFiles] = useState<File[]>([]);
+  const [fileErr, setFileErr] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -51,13 +63,32 @@ export default function TicketDetailsPage() {
     if (isIT) getAgents().then(setAgents).catch(() => setAgents([]));
   }, [isIT]);
 
+  function handleCommentFiles(selectedFiles: FileList | null) {
+    setFileErr('');
+
+    const nextFiles = Array.from(selectedFiles || []);
+
+    const invalidFile = nextFiles.find(
+      (file) => !ALLOWED_FILE_TYPES.includes(file.type) || file.size > MAX_FILE_SIZE
+    );
+
+    if (invalidFile) {
+      setCommentFiles([]);
+      setFileErr('Attachments must be PDF, PNG, JPG, JPEG, or WEBP and maximum 10MB per file.');
+      return;
+    }
+
+    setCommentFiles(nextFiles);
+  }
+
   async function submitComment(e: React.FormEvent) {
     e.preventDefault();
     if (!profile || !comment.trim()) return;
     setLoading(true);
     try {
-      await addTicketComment({ ticketId: params.id, author: profile, body: comment.trim(), visibility });
+      await addTicketComment({ ticketId: params.id, author: profile, body: comment.trim(), visibility, files: commentFiles });
       setComment('');
+      setCommentFiles([]);
     } finally {
       setLoading(false);
     }
@@ -128,12 +159,40 @@ export default function TicketDetailsPage() {
                       <span className="badge bg-white text-slate-500">{c.visibility}</span>
                     </div>
                     <p className="mt-2 text-sm text-slate-700 whitespace-pre-wrap">{c.body}</p>
+                    {!!c.attachments?.length && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {c.attachments.map((a) => (
+                          <a
+                            key={a.path}
+                            href={a.url}
+                            target="_blank"
+                            className="rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-lazem-teal hover:bg-slate-50"
+                          >
+                            {a.name}
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
 
               <form onSubmit={submitComment} className="mt-6">
                 <textarea className="input min-h-28" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a comment..." />
+                <div className="mt-3">
+                  <label className="label">Attachments</label>
+                  <input
+                    className="input"
+                    type="file"
+                    multiple
+                    accept=".png,.jpg,.jpeg,.webp,.pdf"
+                    onChange={(e) => handleCommentFiles(e.target.files)}
+                  />
+                  <p className="mt-2 text-xs text-slate-500">
+                    Attach proof of work, screenshots, or files. Maximum 10MB per file.
+                  </p>
+                  {fileErr && <p className="mt-2 rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{fileErr}</p>}
+                </div>
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                   {isIT ? (
                     <select className="input max-w-xs" value={visibility} onChange={(e) => setVisibility(e.target.value as CommentVisibility)}>
