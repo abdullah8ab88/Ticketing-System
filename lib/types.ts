@@ -66,6 +66,8 @@ export type TicketComment = {
   authorName: string;
   visibility: CommentVisibility;
   body: string;
+  translatedBody?: string;
+  translatedLang?: string;
   attachments?: Attachment[];
   createdAt?: Timestamp;
 };

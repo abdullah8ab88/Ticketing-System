@@ -76,6 +76,21 @@ export async function createTicket(input: {
   return ref.id;
 }
 
+async function translateText(text: string): Promise<{ translatedText: string; targetLang: string } | null> {
+  try {
+    const res = await fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (error) {
+    console.error('Comment translation failed', error);
+    return null;
+  }
+}
+
 export async function addTicketComment(input: {
   ticketId: string;
   author: UserProfile;
@@ -84,6 +99,7 @@ export async function addTicketComment(input: {
   files?: File[];
 }) {
   const attachments = input.files?.length ? await uploadTicketFiles(input.ticketId, input.files) : [];
+  const translation = await translateText(input.body);
 
   await addDoc(collection(db, 'tickets', input.ticketId, 'comments'), {
     authorId: input.author.uid,
@@ -91,6 +107,7 @@ export async function addTicketComment(input: {
     body: input.body,
     visibility: input.visibility,
     ...(attachments.length ? { attachments } : {}),
+    ...(translation ? { translatedBody: translation.translatedText, translatedLang: translation.targetLang } : {}),
     createdAt: serverTimestamp()
   });
   await updateDoc(doc(db, 'tickets', input.ticketId), { updatedAt: serverTimestamp() });

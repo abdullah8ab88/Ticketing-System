@@ -159,6 +159,11 @@ export default function TicketDetailsPage() {
                       <span className="badge bg-white text-slate-500">{c.visibility}</span>
                     </div>
                     <p className="mt-2 text-sm text-slate-700 whitespace-pre-wrap">{c.body}</p>
+                    {c.translatedBody && (
+                      <p className="mt-2 border-t border-slate-200 pt-2 text-sm italic text-slate-500 whitespace-pre-wrap">
+                        {c.translatedBody}
+                      </p>
+                    )}
                     {!!c.attachments?.length && (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {c.attachments.map((a) => (
