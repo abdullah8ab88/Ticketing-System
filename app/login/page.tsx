@@ -4,13 +4,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { AuthCredential, OAuthProvider } from 'firebase/auth';
-import { ShieldCheck } from 'lucide-react';
+import { Languages, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
 import { MicrosoftLogo } from '@/components/microsoft-logo';
 import Image from "next/image";
 export default function LoginPage() {
   const router = useRouter();
   const { login, loginWithMicrosoft, linkMicrosoftAccount, resetPassword } = useAuth();
+  const { t, toggleLang } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,7 +37,7 @@ export default function LoginPage() {
       await login(email, password);
       router.push(destinationAfterLogin());
     } catch (error: any) {
-      setErr(error.message || 'Login failed');
+      setErr(error.message || t('login.errLoginFailed'));
     } finally {
       setLoading(false);
     }
@@ -53,10 +55,10 @@ export default function LoginPage() {
         if (pendingCredential && conflictEmail) {
           setLinkPrompt({ email: conflictEmail, credential: pendingCredential });
         } else {
-          setErr(error.message || 'Microsoft sign-in failed');
+          setErr(error.message || t('login.errMicrosoftFailed'));
         }
       } else {
-        setErr(error.message || 'Microsoft sign-in failed');
+        setErr(error.message || t('login.errMicrosoftFailed'));
       }
     } finally {
       setMsLoading(false);
@@ -71,20 +73,20 @@ export default function LoginPage() {
       await linkMicrosoftAccount(linkPrompt.email, linkPassword, linkPrompt.credential);
       router.push(destinationAfterLogin());
     } catch (error: any) {
-      setErr(error.message || 'Could not link Microsoft account');
+      setErr(error.message || t('login.errLinkFailed'));
     } finally {
       setLinkLoading(false);
     }
   }
 
   async function onReset() {
-    if (!email) return setErr('Enter your email first.');
+    if (!email) return setErr(t('login.errEnterEmail'));
     setErr(''); setMsg(''); setLoading(true);
     try {
       await resetPassword(email);
-      setMsg('Password reset email sent.');
+      setMsg(t('login.resetSent'));
     } catch (error: any) {
-      setErr(error.message || 'Reset failed');
+      setErr(error.message || t('login.errResetFailed'));
     } finally {
       setLoading(false);
     }
@@ -106,11 +108,20 @@ export default function LoginPage() {
   />
 </div>
 </Link>
-          <h1 className="text-5xl font-bold leading-tight">Protecting IT operations. Professionally.</h1>
-          <p className="mt-6 text-lg text-white/75">A secure, modern, and scalable IT support desk for Lazem teams.</p>
+          <h1 className="text-5xl font-bold leading-tight">{t('login.heroTitle')}</h1>
+          <p className="mt-6 text-lg text-white/75">{t('login.heroSubtitle')}</p>
         </div>
       </section>
-      <section className="flex items-center justify-center p-6">
+      <section className="relative flex items-center justify-center p-6">
+        <button
+          type="button"
+          onClick={toggleLang}
+          className="absolute top-5 flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-lazem-teal shadow-sm hover:bg-slate-50 end-5"
+          aria-label="Toggle language"
+        >
+          <Languages className="h-4 w-4" />
+          {t('nav.langToggle')}
+        </button>
         <div className="card w-full max-w-md">
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-lazem-teal text-white lg:hidden">
@@ -126,20 +137,20 @@ export default function LoginPage() {
   className="mx-auto mb-5"
 />
 
-            <h2 className="text-3xl font-bold text-lazem-teal">Welcome back</h2>
-            <p className="mt-2 text-sm text-slate-500">Login to manage IT requests.</p>
+            <h2 className="text-3xl font-bold text-lazem-teal">{t('login.welcomeBack')}</h2>
+            <p className="mt-2 text-sm text-slate-500">{t('login.subtitle')}</p>
           </div>
 
           {linkPrompt ? (
             <form onSubmit={onLinkSubmit}>
               <p className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-700">
-                An account already exists for <strong>{linkPrompt.email}</strong>. Enter its password to connect Microsoft sign-in to it.
+                {t('login.linkAccountExists')} <strong>{linkPrompt.email}</strong>{t('login.linkAccountBody')}
               </p>
-              <label className="label mt-4">Password for {linkPrompt.email}</label>
+              <label className="label mt-4">{t('login.linkPasswordFor')} {linkPrompt.email}</label>
               <input className="input" type="password" value={linkPassword} onChange={(e) => setLinkPassword(e.target.value)} required autoFocus />
               {err && <p className="mt-4 rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{err}</p>}
-              <button disabled={linkLoading} className="btn-primary mt-6 w-full">{linkLoading ? 'Connecting...' : 'Connect Microsoft account'}</button>
-              <button type="button" onClick={() => { setLinkPrompt(null); setLinkPassword(''); setErr(''); }} className="mt-3 w-full text-center text-sm font-semibold text-slate-500 hover:underline">Cancel</button>
+              <button disabled={linkLoading} className="btn-primary mt-6 w-full">{linkLoading ? t('login.connecting') : t('login.connectMicrosoft')}</button>
+              <button type="button" onClick={() => { setLinkPrompt(null); setLinkPassword(''); setErr(''); }} className="mt-3 w-full text-center text-sm font-semibold text-slate-500 hover:underline">{t('login.cancel')}</button>
             </form>
           ) : (
             <>
@@ -150,24 +161,24 @@ export default function LoginPage() {
                 className="btn-secondary flex w-full items-center justify-center gap-3"
               >
                 <MicrosoftLogo />
-                {msLoading ? 'Signing in...' : 'Sign in with Microsoft'}
+                {msLoading ? t('login.signingIn') : t('login.signInMicrosoft')}
               </button>
               <div className="my-5 flex items-center gap-3 text-xs font-semibold uppercase text-slate-400">
                 <span className="h-px flex-1 bg-slate-200" />
-                or
+                {t('login.or')}
                 <span className="h-px flex-1 bg-slate-200" />
               </div>
               <form onSubmit={onSubmit}>
-                <label className="label">Email</label>
+                <label className="label">{t('login.email')}</label>
                 <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                <label className="label mt-4">Password</label>
+                <label className="label mt-4">{t('login.password')}</label>
                 <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                 {err && <p className="mt-4 rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{err}</p>}
                 {msg && <p className="mt-4 rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-700">{msg}</p>}
-                <button disabled={loading} className="btn-primary mt-6 w-full">{loading ? 'Please wait...' : 'Login'}</button>
+                <button disabled={loading} className="btn-primary mt-6 w-full">{loading ? t('login.pleaseWait') : t('login.submit')}</button>
                 <div className="mt-5 flex items-center justify-between text-sm">
-                  <button type="button" onClick={onReset} className="font-semibold text-lazem-teal hover:underline">Forgot password?</button>
-                  <Link href="/register" className="font-semibold text-lazem-teal hover:underline">Create account</Link>
+                  <button type="button" onClick={onReset} className="font-semibold text-lazem-teal hover:underline">{t('login.forgotPassword')}</button>
+                  <Link href="/register" className="font-semibold text-lazem-teal hover:underline">{t('login.createAccount')}</Link>
                 </div>
               </form>
             </>

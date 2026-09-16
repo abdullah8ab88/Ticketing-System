@@ -14,13 +14,16 @@ import { Search } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 import { ProtectedRoute } from '@/components/protected-route';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
 import { db } from '@/lib/firebase';
 import type { Priority, Ticket, TicketStatus } from '@/lib/types';
 import { formatDateTime, priorityClass, statusClass, statuses } from '@/lib/utils';
+import { categoryLabels, priorityLabels, statusLabels, translateValue } from '@/lib/i18n';
 
 export default function TicketsPage() {
   const router = useRouter();
   const { profile, isIT } = useAuth();
+  const { t, lang } = useLanguage();
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [search, setSearch] = useState('');
@@ -70,7 +73,7 @@ export default function TicketsPage() {
       },
       (error) => {
         console.error('Tickets snapshot error:', error);
-        setErr(error.message || 'Could not load tickets.');
+        setErr(error.message || t('ticketsList.loadError'));
       }
     );
   }, [profile?.uid, isIT]);
@@ -100,20 +103,16 @@ export default function TicketsPage() {
   return (
     <ProtectedRoute>
       <AppShell
-        title={isIT ? 'Tickets' : 'My Tickets'}
-        subtitle={
-          isIT
-            ? 'Search, filter, assign, and resolve IT tickets'
-            : 'Track your submitted IT support requests'
-        }
+        title={isIT ? t('ticketsList.titleIT') : t('ticketsList.titleStaff')}
+        subtitle={isIT ? t('ticketsList.subtitleIT') : t('ticketsList.subtitleStaff')}
       >
         <div className="card">
           <div className="mb-5 grid gap-3 md:grid-cols-[1fr_180px_180px_auto]">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 rtl:left-auto rtl:right-4" />
               <input
-                className="input pl-11"
-                placeholder="Search tickets..."
+                className="input pl-11 rtl:pl-4 rtl:pr-11"
+                placeholder={t('ticketsList.search')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -126,9 +125,9 @@ export default function TicketsPage() {
                 setStatus(e.target.value as TicketStatus | '')
               }
             >
-              <option value="">All statuses</option>
+              <option value="">{t('ticketsList.allStatuses')}</option>
               {statuses.map((s) => (
-                <option key={s}>{s}</option>
+                <option key={s} value={s}>{translateValue(statusLabels, s, lang)}</option>
               ))}
             </select>
 
@@ -139,14 +138,14 @@ export default function TicketsPage() {
                 setPriority(e.target.value as Priority | '')
               }
             >
-              <option value="">All priorities</option>
+              <option value="">{t('ticketsList.allPriorities')}</option>
               {['Low', 'Medium', 'High', 'Urgent'].map((p) => (
-                <option key={p}>{p}</option>
+                <option key={p} value={p}>{translateValue(priorityLabels, p, lang)}</option>
               ))}
             </select>
 
             <Link href="/tickets/new" className="btn-primary whitespace-nowrap">
-              New Ticket
+              {t('ticketsList.newTicket')}
             </Link>
           </div>
 
@@ -160,60 +159,60 @@ export default function TicketsPage() {
             <table className="w-full text-left text-sm">
               <thead className="text-xs uppercase text-slate-400">
                 <tr>
-                  <th className="py-3">Ticket</th>
-                  <th>Category</th>
-                  <th>Status</th>
-                  <th>Priority</th>
-                  <th>Created</th>
+                  <th className="py-3">{t('ticketsList.colTicket')}</th>
+                  <th>{t('ticketsList.colCategory')}</th>
+                  <th>{t('ticketsList.colStatus')}</th>
+                  <th>{t('ticketsList.colPriority')}</th>
+                  <th>{t('ticketsList.colCreated')}</th>
 
                   {isIT && (
                     <>
-                      <th>Requester</th>
-                      <th>Assigned</th>
+                      <th>{t('ticketsList.colRequester')}</th>
+                      <th>{t('ticketsList.colAssigned')}</th>
                     </>
                   )}
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((t) => (
+                {filtered.map((t2) => (
                   <tr
-                    key={t.id}
-                    onClick={() => router.push(`/tickets/${t.id}`)}
+                    key={t2.id}
+                    onClick={() => router.push(`/tickets/${t2.id}`)}
                     className="cursor-pointer hover:bg-slate-50"
                   >
                     <td className="py-4">
                       <span className="font-semibold text-lazem-teal hover:underline">
-                        {t.ticketNo}
+                        {t2.ticketNo}
                       </span>
-                      <div className="text-slate-500">{t.title}</div>
+                      <div className="text-slate-500">{t2.title}</div>
                     </td>
 
-                    <td className="text-slate-600">{t.category}</td>
+                    <td className="text-slate-600">{translateValue(categoryLabels, t2.category, lang)}</td>
 
                     <td>
-                      <span className={`badge ${statusClass(t.status)}`}>
-                        {t.status}
+                      <span className={`badge ${statusClass(t2.status)}`}>
+                        {translateValue(statusLabels, t2.status, lang)}
                       </span>
                     </td>
 
                     <td>
-                      <span className={`badge ${priorityClass(t.priority)}`}>
-                        {t.priority}
+                      <span className={`badge ${priorityClass(t2.priority)}`}>
+                        {translateValue(priorityLabels, t2.priority, lang)}
                       </span>
                     </td>
 
                     <td className="whitespace-nowrap text-slate-600">
-                      {formatDateTime(t.createdAt)}
+                      {formatDateTime(t2.createdAt)}
                     </td>
 
                     {isIT && (
                       <>
                         <td className="text-slate-600">
-                          {t.requesterName || 'Unknown'}
+                          {t2.requesterName || t('ticketsList.unknown')}
                         </td>
                         <td className="text-slate-600">
-                          {t.assignedToName || 'Unassigned'}
+                          {t2.assignedToName || t('ticketsList.unassigned')}
                         </td>
                       </>
                     )}
@@ -226,7 +225,7 @@ export default function TicketsPage() {
                       colSpan={isIT ? 7 : 5}
                       className="py-10 text-center text-slate-500"
                     >
-                      No matching tickets.
+                      {t('ticketsList.noMatching')}
                     </td>
                   </tr>
                 )}

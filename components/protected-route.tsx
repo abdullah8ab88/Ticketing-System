@@ -5,9 +5,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
 
 export function ProtectedRoute({ children, requireIT = false, requireAdmin = false }: { children: React.ReactNode; requireIT?: boolean; requireAdmin?: boolean }) {
   const { firebaseUser, profile, loading, isIT, isAdmin } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -19,19 +21,19 @@ export function ProtectedRoute({ children, requireIT = false, requireAdmin = fal
   }, [loading, firebaseUser, pathname, router]);
 
   if (loading || !firebaseUser) {
-    return <div className="flex min-h-screen items-center justify-center text-lazem-teal">Loading...</div>;
+    return <div className="flex min-h-screen items-center justify-center text-lazem-teal">{t('protected.loading')}</div>;
   }
 
-  if (!profile) return <div className="card m-6" role="alert"><p>We could not load your profile. Please retry.</p><button className="btn-primary mt-4" onClick={() => window.location.reload()}>Retry</button></div>;
+  if (!profile) return <div className="card m-6" role="alert"><p>{t('protected.profileError')}</p><button className="btn-primary mt-4" onClick={() => window.location.reload()}>{t('protected.retry')}</button></div>;
 
   if (profile.pending) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6">
         <div className="card max-w-lg text-center">
           <ShieldAlert className="mx-auto mb-4 h-12 w-12 text-amber-600" />
-          <h1 className="text-2xl font-bold text-lazem-teal">Account pending approval</h1>
-          <p className="mt-3 text-sm text-slate-600">Your account has been created, but an admin must activate it before you can use the system.</p>
-          <Link href="/login" className="btn-secondary mt-6">Back to login</Link>
+          <h1 className="text-2xl font-bold text-lazem-teal">{t('protected.pendingTitle')}</h1>
+          <p className="mt-3 text-sm text-slate-600">{t('protected.pendingBody')}</p>
+          <Link href="/login" className="btn-secondary mt-6">{t('protected.backToLogin')}</Link>
         </div>
       </div>
     );
@@ -42,9 +44,9 @@ export function ProtectedRoute({ children, requireIT = false, requireAdmin = fal
       <div className="flex min-h-screen items-center justify-center p-6">
         <div className="card max-w-lg text-center">
           <ShieldAlert className="mx-auto mb-4 h-12 w-12 text-rose-600" />
-          <h1 className="text-2xl font-bold text-lazem-teal">Access denied</h1>
-          <p className="mt-3 text-sm text-slate-600">You do not have permission to open this page.</p>
-          <Link href="/dashboard" className="btn-primary mt-6">Go to dashboard</Link>
+          <h1 className="text-2xl font-bold text-lazem-teal">{t('protected.deniedTitle')}</h1>
+          <p className="mt-3 text-sm text-slate-600">{t('protected.deniedBody')}</p>
+          <Link href="/dashboard" className="btn-primary mt-6">{t('protected.goDashboard')}</Link>
         </div>
       </div>
     );

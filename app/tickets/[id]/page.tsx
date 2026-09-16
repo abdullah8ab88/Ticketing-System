@@ -7,10 +7,16 @@ import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { AppShell } from '@/components/app-shell';
 import { ProtectedRoute } from '@/components/protected-route';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
 import { db } from '@/lib/firebase';
 import { addTicketComment, assignTicket, getAgents, updateTicketStatus } from '@/lib/ticket-service';
 import type { CommentVisibility, Ticket, TicketComment, TicketStatus, UserProfile } from '@/lib/types';
 import { formatDateTime, priorityClass, statusClass, statuses } from '@/lib/utils';
+import { categoryLabels, departmentLabels, employeeDepartmentLabels, priorityLabels, roleLabels, statusLabels, translateValue } from '@/lib/i18n';
+
+function translateDepartment(value: string, lang: 'en' | 'ar') {
+  return departmentLabels[value]?.[lang] ?? employeeDepartmentLabels[value]?.[lang] ?? value;
+}
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -35,6 +41,7 @@ const TEAM_ASSIGNEE: UserProfile = {
 export default function TicketDetailsPage() {
   const params = useParams<{ id: string }>();
   const { profile, isIT } = useAuth();
+  const { t, lang } = useLanguage();
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [comments, setComments] = useState<TicketComment[]>([]);
   const [agents, setAgents] = useState<UserProfile[]>([]);
@@ -74,7 +81,7 @@ export default function TicketDetailsPage() {
 
     if (invalidFile) {
       setCommentFiles([]);
-      setFileErr('Attachments must be PDF, PNG, JPG, JPEG, or WEBP and maximum 10MB per file.');
+      setFileErr(t('ticketDetails.errFileType'));
       return;
     }
 
@@ -95,7 +102,7 @@ export default function TicketDetailsPage() {
   }
 
   if (!ticket) {
-    return <ProtectedRoute><AppShell title="Ticket"><div className="card">Loading ticket...</div></AppShell></ProtectedRoute>;
+    return <ProtectedRoute><AppShell title={t('nav.tickets')}><div className="card">{t('ticketDetails.loading')}</div></AppShell></ProtectedRoute>;
   }
 
   return (
@@ -107,17 +114,17 @@ export default function TicketDetailsPage() {
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-bold text-lazem-teal">{ticket.title}</h2>
-                  <p className="mt-2 text-sm text-slate-500">Created by {ticket.requesterName} · {ticket.department}</p>
+                  <p className="mt-2 text-sm text-slate-500">{t('ticketDetails.createdBy')} {ticket.requesterName} · {translateDepartment(ticket.department, lang)}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <span className={`badge ${statusClass(ticket.status)}`}>{ticket.status}</span>
-                  <span className={`badge ${priorityClass(ticket.priority)}`}>{ticket.priority}</span>
+                  <span className={`badge ${statusClass(ticket.status)}`}>{translateValue(statusLabels, ticket.status, lang)}</span>
+                  <span className={`badge ${priorityClass(ticket.priority)}`}>{translateValue(priorityLabels, ticket.priority, lang)}</span>
                 </div>
               </div>
               <div className="mt-6 rounded-3xl bg-slate-50 p-5 text-sm leading-7 text-slate-700 whitespace-pre-wrap">{ticket.description}</div>
               {!!ticket.attachments?.length && (
                 <div className="mt-6">
-                  <h3 className="font-bold text-lazem-teal">Attachments</h3>
+                  <h3 className="font-bold text-lazem-teal">{t('ticketDetails.attachments')}</h3>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {ticket.attachments.map((a) => <a key={a.path} href={a.url} target="_blank" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-lazem-teal hover:bg-slate-50">{a.name}</a>)}
                   </div>
@@ -125,22 +132,22 @@ export default function TicketDetailsPage() {
               )}
               {!!ticket.people?.length && (
                 <div className="mt-6">
-                  <h3 className="font-bold text-lazem-teal">{ticket.category} details</h3>
+                  <h3 className="font-bold text-lazem-teal">{translateValue(categoryLabels, ticket.category, lang)} {t('newTicket.detailsSuffix')}</h3>
                   <div className="mt-3 space-y-4">
                     {ticket.people.map((person, index) => (
                       <div key={index} className="rounded-3xl bg-slate-50 p-5">
                         {ticket.people!.length > 1 && (
-                          <div className="mb-3 text-xs font-bold uppercase text-slate-400">Person {index + 1}</div>
+                          <div className="mb-3 text-xs font-bold uppercase text-slate-400">{t('ticketDetails.person')} {index + 1}</div>
                         )}
                         <dl className="grid gap-3 text-sm sm:grid-cols-2">
-                          <OnboardingRow label="First name (Arabic)" value={person.firstNameAr} />
-                          <OnboardingRow label="Last name (Arabic)" value={person.lastNameAr} />
-                          <OnboardingRow label="First name (English)" value={person.firstNameEn} />
-                          <OnboardingRow label="Last name (English)" value={person.lastNameEn} />
-                          <OnboardingRow label="Job title (Arabic)" value={person.jobTitleAr} />
-                          <OnboardingRow label="Job title (English)" value={person.jobTitleEn} />
-                          <OnboardingRow label="Mobile number" value={person.mobile} />
-                          <OnboardingRow label="Personal email" value={person.personalEmail} />
+                          <OnboardingRow label={t('newTicket.firstNameAr')} value={person.firstNameAr} />
+                          <OnboardingRow label={t('newTicket.lastNameAr')} value={person.lastNameAr} />
+                          <OnboardingRow label={t('newTicket.firstNameEn')} value={person.firstNameEn} />
+                          <OnboardingRow label={t('newTicket.lastNameEn')} value={person.lastNameEn} />
+                          <OnboardingRow label={t('newTicket.jobTitleAr')} value={person.jobTitleAr} />
+                          <OnboardingRow label={t('newTicket.jobTitleEn')} value={person.jobTitleEn} />
+                          <OnboardingRow label={t('newTicket.mobile')} value={person.mobile} />
+                          <OnboardingRow label={t('newTicket.personalEmail')} value={person.personalEmail} />
                         </dl>
                       </div>
                     ))}
@@ -150,13 +157,13 @@ export default function TicketDetailsPage() {
             </div>
 
             <div className="card">
-              <h3 className="text-xl font-bold text-lazem-teal">Timeline & comments</h3>
+              <h3 className="text-xl font-bold text-lazem-teal">{t('ticketDetails.timeline')}</h3>
               <div className="mt-5 space-y-4">
                 {comments.filter((c) => isIT || c.visibility === 'public').map((c) => (
                   <div key={c.id} className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="font-semibold text-lazem-teal">{c.authorName}</div>
-                      <span className="badge bg-white text-slate-500">{c.visibility}</span>
+                      <span className="badge bg-white text-slate-500">{c.visibility === 'public' ? t('ticketDetails.publicComment') : t('ticketDetails.internalNote')}</span>
                     </div>
                     <p className="mt-2 text-sm text-slate-700 whitespace-pre-wrap">{c.body}</p>
                     {c.translatedBody && (
@@ -183,9 +190,9 @@ export default function TicketDetailsPage() {
               </div>
 
               <form onSubmit={submitComment} className="mt-6">
-                <textarea className="input min-h-28" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a comment..." />
+                <textarea className="input min-h-28" value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t('ticketDetails.addCommentPlaceholder')} />
                 <div className="mt-3">
-                  <label className="label">Attachments</label>
+                  <label className="label">{t('ticketDetails.attachments')}</label>
                   <input
                     className="input"
                     type="file"
@@ -194,18 +201,18 @@ export default function TicketDetailsPage() {
                     onChange={(e) => handleCommentFiles(e.target.files)}
                   />
                   <p className="mt-2 text-xs text-slate-500">
-                    Attach proof of work, screenshots, or files. Maximum 10MB per file.
+                    {t('ticketDetails.attachmentsHint')}
                   </p>
                   {fileErr && <p className="mt-2 rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{fileErr}</p>}
                 </div>
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                   {isIT ? (
                     <select className="input max-w-xs" value={visibility} onChange={(e) => setVisibility(e.target.value as CommentVisibility)}>
-                      <option value="public">Public comment</option>
-                      <option value="internal">Internal IT note</option>
+                      <option value="public">{t('ticketDetails.publicComment')}</option>
+                      <option value="internal">{t('ticketDetails.internalNote')}</option>
                     </select>
                   ) : <span />}
-                  <button disabled={loading} className="btn-primary">Add comment</button>
+                  <button disabled={loading} className="btn-primary">{t('ticketDetails.addComment')}</button>
                 </div>
               </form>
             </div>
@@ -213,18 +220,18 @@ export default function TicketDetailsPage() {
 
           <aside className="space-y-6">
             <div className="card">
-              <h3 className="text-lg font-bold text-lazem-teal">Actions</h3>
+              <h3 className="text-lg font-bold text-lazem-teal">{t('ticketDetails.actions')}</h3>
               {isIT && (
                 <>
                   <div className="mt-5 flex items-center justify-between gap-3">
-                    <label className="label">Assign to</label>
+                    <label className="label">{t('ticketDetails.assignTo')}</label>
                     {profile && ticket.assignedToId !== profile.uid && (
                       <button
                         type="button"
                         onClick={() => assignTicket(ticket.id, profile)}
                         className="text-xs font-semibold text-lazem-teal hover:underline"
                       >
-                        Assign to me
+                        {t('ticketDetails.assignToMe')}
                       </button>
                     )}
                   </div>
@@ -232,31 +239,31 @@ export default function TicketDetailsPage() {
                     const agent = [...agents, TEAM_ASSIGNEE].find((a) => a.uid === e.target.value);
                     if (agent) assignTicket(ticket.id, agent);
                   }}>
-                    <option value="">Unassigned</option>
-                    {agents.map((a) => <option key={a.uid} value={a.uid}>{a.name} · {a.role.replace('_', ' ')}</option>)}
+                    <option value="">{t('ticketDetails.unassigned')}</option>
+                    {agents.map((a) => <option key={a.uid} value={a.uid}>{a.name} · {roleLabels[a.role]?.[lang] ?? a.role}</option>)}
                     <option value={TEAM_ASSIGNEE.uid}>{TEAM_ASSIGNEE.name}</option>
                   </select>
-                  <label className="label mt-5">Status</label>
+                  <label className="label mt-5">{t('ticketDetails.status')}</label>
                   <select className="input" value={ticket.status} onChange={(e) => updateTicketStatus(ticket.id, e.target.value as TicketStatus)}>
-                    {statuses.map((s) => <option key={s}>{s}</option>)}
+                    {statuses.map((s) => <option key={s} value={s}>{translateValue(statusLabels, s, lang)}</option>)}
                   </select>
                 </>
               )}
-              {!isIT && <p className="mt-3 text-sm text-slate-500">The IT team will update assignment and status.</p>}
+              {!isIT && <p className="mt-3 text-sm text-slate-500">{t('ticketDetails.itWillUpdate')}</p>}
             </div>
 
             <div className="card">
-              <h3 className="text-lg font-bold text-lazem-teal">Details</h3>
+              <h3 className="text-lg font-bold text-lazem-teal">{t('ticketDetails.details')}</h3>
               <dl className="mt-4 space-y-3 text-sm">
-                <Row label="Category" value={ticket.category} />
-                <Row label="Department" value={ticket.department} />
-                <Row label="Requester" value={ticket.requesterName} />
-                <Row label="Assigned" value={ticket.assignedToName || 'Unassigned'} />
-                <Row label="Email" value={ticket.requesterEmail} />
-                <Row label="Created" value={formatDateTime(ticket.createdAt)} />
-                <Row label="Last updated" value={formatDateTime(ticket.updatedAt)} />
+                <Row label={t('ticketDetails.category')} value={translateValue(categoryLabels, ticket.category, lang)} />
+                <Row label={t('ticketDetails.department')} value={translateDepartment(ticket.department, lang)} />
+                <Row label={t('ticketDetails.requester')} value={ticket.requesterName} />
+                <Row label={t('ticketDetails.assigned')} value={ticket.assignedToName || t('ticketDetails.unassigned')} />
+                <Row label={t('ticketDetails.email')} value={ticket.requesterEmail} />
+                <Row label={t('ticketDetails.created')} value={formatDateTime(ticket.createdAt)} />
+                <Row label={t('ticketDetails.lastUpdated')} value={formatDateTime(ticket.updatedAt)} />
               </dl>
-              <Link href="/tickets" className="btn-secondary mt-6 w-full">Back to tickets</Link>
+              <Link href="/tickets" className="btn-secondary mt-6 w-full">{t('ticketDetails.backToTickets')}</Link>
             </div>
           </aside>
         </div>
@@ -266,7 +273,7 @@ export default function TicketDetailsPage() {
 }
 
 function Row({ label, value }: { label: string; value: string }) {
-  return <div className="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt className="text-slate-500">{label}</dt><dd className="text-right font-semibold text-slate-700">{value}</dd></div>;
+  return <div className="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt className="text-slate-500">{label}</dt><dd className="text-right font-semibold text-slate-700 rtl:text-left">{value}</dd></div>;
 }
 
 function OnboardingRow({ label, value }: { label: string; value: string }) {

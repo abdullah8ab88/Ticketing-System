@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { AuthCredential, OAuthProvider } from 'firebase/auth';
+import { Languages } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
+import { departmentLabels } from '@/lib/i18n';
 import { departments } from '@/lib/utils';
 import { MicrosoftLogo } from '@/components/microsoft-logo';
 import Image from "next/image";
@@ -12,6 +15,7 @@ import Image from "next/image";
 export default function RegisterPage() {
   const router = useRouter();
   const { register, loginWithMicrosoft, linkMicrosoftAccount } = useAuth();
+  const { t, lang, toggleLang } = useLanguage();
   const [form, setForm] = useState({ name: '', email: '', password: '', department: '' });
   const [loading, setLoading] = useState(false);
   const [msLoading, setMsLoading] = useState(false);
@@ -22,13 +26,13 @@ export default function RegisterPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (form.password.length < 6) return setErr('Password must be at least 6 characters.');
+    if (form.password.length < 6) return setErr(t('register.errPasswordLength'));
     setLoading(true); setErr('');
     try {
       await register(form);
       router.push('/dashboard');
     } catch (error: any) {
-      setErr(error.message || 'Registration failed');
+      setErr(error.message || t('register.errRegisterFailed'));
     } finally {
       setLoading(false);
     }
@@ -46,10 +50,10 @@ export default function RegisterPage() {
         if (pendingCredential && conflictEmail) {
           setLinkPrompt({ email: conflictEmail, credential: pendingCredential });
         } else {
-          setErr(error.message || 'Microsoft sign-in failed');
+          setErr(error.message || t('login.errMicrosoftFailed'));
         }
       } else {
-        setErr(error.message || 'Microsoft sign-in failed');
+        setErr(error.message || t('login.errMicrosoftFailed'));
       }
     } finally {
       setMsLoading(false);
@@ -64,14 +68,23 @@ export default function RegisterPage() {
       await linkMicrosoftAccount(linkPrompt.email, linkPassword, linkPrompt.credential);
       router.push('/dashboard');
     } catch (error: any) {
-      setErr(error.message || 'Could not link Microsoft account');
+      setErr(error.message || t('login.errLinkFailed'));
     } finally {
       setLinkLoading(false);
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
+    <div className="relative flex min-h-screen items-center justify-center p-6">
+      <button
+        type="button"
+        onClick={toggleLang}
+        className="absolute top-5 flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-lazem-teal shadow-sm hover:bg-slate-50 end-5"
+        aria-label="Toggle language"
+      >
+        <Languages className="h-4 w-4" />
+        {t('nav.langToggle')}
+      </button>
       <div className="card w-full max-w-lg">
           <Image
     src="/logo/Lazem Secondary Logo Solid (1).svg"
@@ -81,19 +94,19 @@ export default function RegisterPage() {
   priority
   className="mx-auto mb-5"
 />
-        <h1 className="text-3xl font-bold text-lazem-teal">Create account</h1>
-        <p className="mt-2 text-sm text-slate-500">New accounts require admin activation.</p>
+        <h1 className="text-3xl font-bold text-lazem-teal">{t('register.title')}</h1>
+        <p className="mt-2 text-sm text-slate-500">{t('register.subtitle')}</p>
 
         {linkPrompt ? (
           <form onSubmit={onLinkSubmit}>
             <p className="mt-6 rounded-2xl bg-amber-50 p-3 text-sm text-amber-700">
-              An account already exists for <strong>{linkPrompt.email}</strong>. Enter its password to connect Microsoft sign-in to it.
+              {t('login.linkAccountExists')} <strong>{linkPrompt.email}</strong>{t('login.linkAccountBody')}
             </p>
-            <label className="label mt-4">Password for {linkPrompt.email}</label>
+            <label className="label mt-4">{t('login.linkPasswordFor')} {linkPrompt.email}</label>
             <input className="input" type="password" value={linkPassword} onChange={(e) => setLinkPassword(e.target.value)} required autoFocus />
             {err && <p className="mt-4 rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{err}</p>}
-            <button disabled={linkLoading} className="btn-primary mt-6 w-full">{linkLoading ? 'Connecting...' : 'Connect Microsoft account'}</button>
-            <button type="button" onClick={() => { setLinkPrompt(null); setLinkPassword(''); setErr(''); }} className="mt-3 w-full text-center text-sm font-semibold text-slate-500 hover:underline">Cancel</button>
+            <button disabled={linkLoading} className="btn-primary mt-6 w-full">{linkLoading ? t('login.connecting') : t('login.connectMicrosoft')}</button>
+            <button type="button" onClick={() => { setLinkPrompt(null); setLinkPassword(''); setErr(''); }} className="mt-3 w-full text-center text-sm font-semibold text-slate-500 hover:underline">{t('login.cancel')}</button>
           </form>
         ) : (
           <>
@@ -104,28 +117,28 @@ export default function RegisterPage() {
               className="btn-secondary mt-6 flex w-full items-center justify-center gap-3"
             >
               <MicrosoftLogo />
-              {msLoading ? 'Signing in...' : 'Sign up with Microsoft'}
+              {msLoading ? t('login.signingIn') : t('register.signUpMicrosoft')}
             </button>
             <div className="my-5 flex items-center gap-3 text-xs font-semibold uppercase text-slate-400">
               <span className="h-px flex-1 bg-slate-200" />
-              or
+              {t('login.or')}
               <span className="h-px flex-1 bg-slate-200" />
             </div>
             <form onSubmit={onSubmit}>
-              <label className="label">Full name</label>
+              <label className="label">{t('register.fullName')}</label>
               <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-              <label className="label mt-4">Email</label>
+              <label className="label mt-4">{t('login.email')}</label>
               <input className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-              <label className="label mt-4">Department</label>
+              <label className="label mt-4">{t('register.department')}</label>
               <select className="input" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} required>
-                <option value="">Select department</option>
-                {departments.map((d) => <option key={d}>{d}</option>)}
+                <option value="">{t('register.selectDepartment')}</option>
+                {departments.map((d) => <option key={d} value={d}>{departmentLabels[d]?.[lang] ?? d}</option>)}
               </select>
-              <label className="label mt-4">Password</label>
+              <label className="label mt-4">{t('register.password')}</label>
               <input className="input" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
               {err && <p className="mt-4 rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{err}</p>}
-              <button disabled={loading} className="btn-primary mt-6 w-full">{loading ? 'Creating...' : 'Create account'}</button>
-              <p className="mt-5 text-center text-sm text-slate-500">Already have an account? <Link href="/login" className="font-semibold text-lazem-teal">Login</Link></p>
+              <button disabled={loading} className="btn-primary mt-6 w-full">{loading ? t('register.creating') : t('register.submit')}</button>
+              <p className="mt-5 text-center text-sm text-slate-500">{t('register.alreadyHaveAccount')} <Link href="/login" className="font-semibold text-lazem-teal">{t('register.login')}</Link></p>
             </form>
           </>
         )}

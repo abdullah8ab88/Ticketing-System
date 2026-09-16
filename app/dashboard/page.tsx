@@ -8,13 +8,16 @@ import { CheckCircle2, Clock3, Inbox, PlusCircle, TicketIcon, Users } from 'luci
 import { AppShell } from '@/components/app-shell';
 import { ProtectedRoute } from '@/components/protected-route';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
 import { db } from '@/lib/firebase';
 import type { Ticket } from '@/lib/types';
 import { priorityClass, statusClass } from '@/lib/utils';
+import { priorityLabels, statusLabels, translateValue } from '@/lib/i18n';
 
 export default function DashboardPage() {
   const router = useRouter();
   const { profile, isIT } = useAuth();
+  const { t, lang } = useLanguage();
   const [tickets, setTickets] = useState<Ticket[]>([]);
 
   // 🔥 فلتر الحالة
@@ -83,40 +86,40 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <AppShell title="Dashboard" subtitle="Live overview of IT support operations">
+      <AppShell title={t('dashboard.title')} subtitle={t('dashboard.subtitle')}>
 
         {/* 🔥 Stat Cards */}
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
           <StatCard
-            label="Total Tickets"
+            label={t('dashboard.totalTickets')}
             value={stats.total}
             icon={<TicketIcon />}
             onClick={() => setFilter('all')}
           />
 
           <StatCard
-            label="Active"
+            label={t('dashboard.active')}
             value={stats.open}
             icon={<Inbox />}
             onClick={() => setFilter('active')}
           />
 
           <StatCard
-            label="In Progress"
+            label={t('dashboard.inProgress')}
             value={stats.inProgress}
             icon={<Clock3 />}
             onClick={() => setFilter('inProgress')}
           />
 
           <StatCard
-            label="Closed"
+            label={t('dashboard.closed')}
             value={stats.closed}
             icon={<CheckCircle2 />}
             onClick={() => setFilter('closed')}
           />
 
           <StatCard
-            label="Unassigned"
+            label={t('dashboard.unassigned')}
             value={stats.unassigned}
             icon={<Users />}
             onClick={() => setFilter('unassigned')}
@@ -129,14 +132,14 @@ export default function DashboardPage() {
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-bold text-lazem-teal">
-                  Recent tickets
+                  {t('dashboard.recentTickets')}
                 </h2>
                 <p className="text-sm text-slate-500">
-                  Filtered tickets view.
+                  {t('dashboard.filteredView')}
                 </p>
               </div>
               <Link href="/tickets" className="btn-secondary">
-                View all
+                {t('dashboard.viewAll')}
               </Link>
             </div>
 
@@ -144,41 +147,41 @@ export default function DashboardPage() {
               <table className="w-full text-left text-sm">
                 <thead className="text-xs uppercase text-slate-400">
                   <tr>
-                    <th className="py-3">Ticket</th>
-                    <th>Status</th>
-                    <th>Priority</th>
-                    <th>Owner</th>
+                    <th className="py-3">{t('dashboard.colTicket')}</th>
+                    <th>{t('dashboard.colStatus')}</th>
+                    <th>{t('dashboard.colPriority')}</th>
+                    <th>{t('dashboard.colOwner')}</th>
                   </tr>
                 </thead>
 
                 <tbody className="divide-y divide-slate-100">
-                  {filteredTickets.slice(0, 8).map((t) => (
+                  {filteredTickets.slice(0, 8).map((t2) => (
                     <tr
-                      key={t.id}
-                      onClick={() => router.push(`/tickets/${t.id}`)}
+                      key={t2.id}
+                      onClick={() => router.push(`/tickets/${t2.id}`)}
                       className="cursor-pointer hover:bg-slate-50"
                     >
                       <td className="py-4">
                         <span className="font-semibold text-lazem-teal hover:underline">
-                          {t.ticketNo}
+                          {t2.ticketNo}
                         </span>
-                        <div className="text-slate-500">{t.title}</div>
+                        <div className="text-slate-500">{t2.title}</div>
                       </td>
 
                       <td>
-                        <span className={`badge ${statusClass(t.status)}`}>
-                          {t.status}
+                        <span className={`badge ${statusClass(t2.status)}`}>
+                          {translateValue(statusLabels, t2.status, lang)}
                         </span>
                       </td>
 
                       <td>
-                        <span className={`badge ${priorityClass(t.priority)}`}>
-                          {t.priority}
+                        <span className={`badge ${priorityClass(t2.priority)}`}>
+                          {translateValue(priorityLabels, t2.priority, lang)}
                         </span>
                       </td>
 
                       <td className="text-slate-600">
-                        {t.assignedToName || 'Unassigned'}
+                        {t2.assignedToName || t('dashboard.unassigned')}
                       </td>
                     </tr>
                   ))}
@@ -189,7 +192,7 @@ export default function DashboardPage() {
                         colSpan={4}
                         className="py-10 text-center text-slate-500"
                       >
-                        No tickets found for this filter.
+                        {t('dashboard.noTickets')}
                       </td>
                     </tr>
                   )}
@@ -202,16 +205,16 @@ export default function DashboardPage() {
           <div className="brand-gradient rounded-3xl p-6 text-white shadow-soft">
             <PlusCircle className="h-12 w-12 text-white/80" />
             <h2 className="mt-6 text-2xl font-bold">
-              Create a new IT request
+              {t('dashboard.createNewRequest')}
             </h2>
             <p className="mt-3 text-sm text-white/70">
-              Submit issues, access requests, or system support needs.
+              {t('dashboard.createNewRequestBody')}
             </p>
             <Link
               href="/tickets/new"
               className="mt-6 inline-flex rounded-2xl bg-white px-4 py-3 text-sm font-bold text-lazem-teal"
             >
-              New Ticket
+              {t('dashboard.newTicket')}
             </Link>
           </div>
         </div>

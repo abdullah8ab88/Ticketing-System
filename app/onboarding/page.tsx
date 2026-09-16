@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation';
 import { Building2 } from 'lucide-react';
 import { ProtectedRoute } from '@/components/protected-route';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
 import { employeeDepartments } from '@/lib/utils';
+import { employeeDepartmentLabels, translateValue } from '@/lib/i18n';
 
 function safeNext(value: string | null) {
   return value?.startsWith('/') && !value.startsWith('//') ? value : '/tickets/new';
@@ -14,6 +16,7 @@ function safeNext(value: string | null) {
 
 export default function OnboardingPage() {
   const { profile, saveDepartment } = useAuth();
+  const { t, lang } = useLanguage();
   const router = useRouter();
   const [department, setDepartment] = useState('');
   const [otherDepartment, setOtherDepartment] = useState('');
@@ -25,7 +28,7 @@ export default function OnboardingPage() {
     if (!profile) return;
     const selectedDepartment = department === 'Other' ? otherDepartment.trim() : department;
     if (!selectedDepartment) {
-      setError('Please select your department.');
+      setError(t('onboarding.errSelectDepartment'));
       return;
     }
 
@@ -37,7 +40,7 @@ export default function OnboardingPage() {
       router.push(safeNext(next));
     } catch (err) {
       console.error('Save department error:', err);
-      setError('We could not save your department. You can continue and select a department on your ticket.');
+      setError(t('onboarding.errSaveFailed'));
       setSaving(false);
     }
   }
@@ -49,28 +52,28 @@ export default function OnboardingPage() {
           <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-50 text-lazem-teal">
             <Building2 className="h-7 w-7" />
           </div>
-          <h1 className="text-2xl font-bold text-lazem-teal">Select your department</h1>
+          <h1 className="text-2xl font-bold text-lazem-teal">{t('onboarding.title')}</h1>
           <p className="mt-2 text-sm text-slate-600">
-            Choose the department you belong to. You can create IT tickets immediately while the IT team verifies this information.
+            {t('onboarding.subtitle')}
           </p>
 
-          <label className="mt-6 block text-sm font-semibold text-slate-700">Department</label>
+          <label className="mt-6 block text-sm font-semibold text-slate-700">{t('onboarding.department')}</label>
           <select className="input mt-2" value={department} onChange={(event) => setDepartment(event.target.value)} required>
-            <option value="">Select department</option>
-            {employeeDepartments.map((item) => <option key={item} value={item}>{item}</option>)}
+            <option value="">{t('onboarding.selectDepartment')}</option>
+            {employeeDepartments.map((item) => <option key={item} value={item}>{translateValue(employeeDepartmentLabels, item, lang)}</option>)}
           </select>
 
           {department === 'Other' && (
             <>
-              <label className="mt-4 block text-sm font-semibold text-slate-700">Department name</label>
-              <input className="input mt-2" value={otherDepartment} onChange={(event) => setOtherDepartment(event.target.value)} placeholder="Enter your department" required />
+              <label className="mt-4 block text-sm font-semibold text-slate-700">{t('onboarding.otherDepartmentLabel')}</label>
+              <input className="input mt-2" value={otherDepartment} onChange={(event) => setOtherDepartment(event.target.value)} placeholder={t('onboarding.otherDepartmentPlaceholder')} required />
             </>
           )}
 
           {error && <p role="alert" className="mt-4 text-sm font-medium text-rose-600">{error}</p>}
-          <button className="btn-primary mt-6 w-full" disabled={saving}>{saving ? 'Saving...' : 'Continue to create ticket'}</button>
-          <Link href="/tickets/new" className="btn-secondary mt-4 block text-center">Continue without saving department</Link>
-          <p className="mt-4 text-center text-xs text-slate-500">Department verification does not prevent you from submitting tickets.</p>
+          <button className="btn-primary mt-6 w-full" disabled={saving}>{saving ? t('onboarding.saving') : t('onboarding.continue')}</button>
+          <Link href="/tickets/new" className="btn-secondary mt-4 block text-center">{t('onboarding.continueWithoutSaving')}</Link>
+          <p className="mt-4 text-center text-xs text-slate-500">{t('onboarding.footerNote')}</p>
         </form>
       </main>
     </ProtectedRoute>

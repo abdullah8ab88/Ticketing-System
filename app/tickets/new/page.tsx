@@ -5,11 +5,13 @@ import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { ProtectedRoute } from '@/components/protected-route';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
 import { Plus, X } from 'lucide-react';
 import { createTicket } from '@/lib/ticket-service';
 import type { PersonDetails, Priority } from '@/lib/types';
 import Link from 'next/link';
 import { categories, departments } from '@/lib/utils';
+import { categoryLabels, departmentLabels, priorityLabels, translateValue } from '@/lib/i18n';
 
 const EMPTY_PERSON: PersonDetails = {
   firstNameAr: '',
@@ -35,6 +37,7 @@ const ALLOWED_FILE_TYPES = [
 export default function NewTicketPage() {
   const router = useRouter();
   const { profile, isIT } = useAuth();
+  const { t, lang } = useLanguage();
 
   const [form, setForm] = useState({
     title: '',
@@ -92,9 +95,7 @@ export default function NewTicketPage() {
 
     if (invalidFile) {
       setFiles([]);
-      setErr(
-        'Attachments must be PDF, PNG, JPG, JPEG, or WEBP and maximum 10MB per file.'
-      );
+      setErr(t('newTicket.errFileType'));
       return;
     }
 
@@ -112,12 +113,12 @@ export default function NewTicketPage() {
       !form.category ||
       !form.department
     ) {
-      setErr('Please complete all required fields.');
+      setErr(t('newTicket.errRequired'));
       return;
     }
 
     if (isHrRequest && people.some((p) => Object.values(p).some((v) => !v.trim()))) {
-      setErr('Please complete all fields for every person.');
+      setErr(t('newTicket.errPeopleRequired'));
       return;
     }
 
@@ -135,7 +136,7 @@ export default function NewTicketPage() {
       router.push(`/tickets/${id}`);
     } catch (error: any) {
       console.error('Create ticket error:', error);
-      setErr(error.message || 'Could not create ticket.');
+      setErr(error.message || t('newTicket.errCreateFailed'));
     } finally {
       setLoading(false);
     }
@@ -143,25 +144,29 @@ export default function NewTicketPage() {
 
   return (
     <ProtectedRoute>
-      <AppShell title="New Ticket" subtitle="Create a new IT support request">
+      <AppShell title={t('newTicket.title')} subtitle={t('newTicket.subtitle')}>
         <form onSubmit={onSubmit} className="card max-w-4xl">
-          {profile?.departmentSelectionRequired && <div role="status" className="mb-5 rounded-2xl bg-amber-50 p-3 text-sm text-amber-700">Select a department for this ticket below. Saving your profile department is optional. <Link href="/onboarding" className="font-semibold underline">Update profile department</Link></div>}
+          {profile?.departmentSelectionRequired && (
+            <div role="status" className="mb-5 rounded-2xl bg-amber-50 p-3 text-sm text-amber-700">
+              {t('newTicket.deptRequiredNotice')} <Link href="/onboarding" className="font-semibold underline">{t('newTicket.updateProfileDept')}</Link>
+            </div>
+          )}
           <div className="grid gap-5 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="label">Title</label>
+              <label className="label">{t('newTicket.fieldTitle')}</label>
               <input
                 className="input"
                 value={form.title}
                 onChange={(e) =>
                   setForm({ ...form, title: e.target.value })
                 }
-                placeholder="Example: Email is not working"
+                placeholder={t('newTicket.titlePlaceholder')}
                 required
               />
             </div>
 
             <div>
-              <label className="label">Category</label>
+              <label className="label">{t('newTicket.category')}</label>
               <select
                 className="input"
                 value={form.category}
@@ -170,15 +175,15 @@ export default function NewTicketPage() {
                 }
                 required
               >
-                <option value="">Select category</option>
+                <option value="">{t('newTicket.selectCategory')}</option>
                 {categoryOptions.map((c) => (
-                  <option key={c}>{c}</option>
+                  <option key={c} value={c}>{translateValue(categoryLabels, c, lang)}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="label">Priority</label>
+              <label className="label">{t('newTicket.priority')}</label>
               <select
                 className="input"
                 value={form.priority}
@@ -190,13 +195,13 @@ export default function NewTicketPage() {
                 }
               >
                 {['Low', 'Medium', 'High', 'Urgent'].map((p) => (
-                  <option key={p}>{p}</option>
+                  <option key={p} value={p}>{translateValue(priorityLabels, p, lang)}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="label">Department</label>
+              <label className="label">{t('newTicket.department')}</label>
 
               {isIT || !profile?.department ? (
                 <select
@@ -207,9 +212,9 @@ export default function NewTicketPage() {
                   }
                   required
                 >
-                  <option value="">Select department</option>
+                  <option value="">{t('newTicket.selectDepartment')}</option>
                   {departments.map((d) => (
-                    <option key={d}>{d}</option>
+                    <option key={d} value={d}>{translateValue(departmentLabels, d, lang)}</option>
                   ))}
                 </select>
               ) : (
@@ -221,14 +226,14 @@ export default function NewTicketPage() {
                     readOnly
                   />
                   <p className="mt-2 text-xs text-slate-500">
-                    Your department is taken from your user profile.
+                    {t('newTicket.deptFromProfile')}
                   </p>
                 </>
               )}
             </div>
 
             <div>
-              <label className="label">Attachments</label>
+              <label className="label">{t('newTicket.attachments')}</label>
               <input
                 className="input"
                 type="file"
@@ -237,19 +242,19 @@ export default function NewTicketPage() {
                 onChange={(e) => handleFiles(e.target.files)}
               />
               <p className="mt-2 text-xs text-slate-500">
-                Screenshots, PDFs, or images. Maximum 10MB per file.
+                {t('newTicket.attachmentsHint')}
               </p>
             </div>
 
             <div className="md:col-span-2">
-              <label className="label">Description</label>
+              <label className="label">{t('newTicket.description')}</label>
               <textarea
                 className="input min-h-40"
                 value={form.description}
                 onChange={(e) =>
                   setForm({ ...form, description: e.target.value })
                 }
-                placeholder="Explain the issue, affected system, device, urgency, and any error message."
+                placeholder={t('newTicket.descriptionPlaceholder')}
                 required
               />
             </div>
@@ -257,24 +262,24 @@ export default function NewTicketPage() {
 
           {isHrRequest && (
             <div className="mt-6 border-t border-slate-100 pt-6">
-              <h3 className="font-bold text-lazem-teal">{form.category} details</h3>
+              <h3 className="font-bold text-lazem-teal">{translateValue(categoryLabels, form.category, lang)} {t('newTicket.detailsSuffix')}</h3>
               <p className="mt-1 text-xs text-slate-500">
                 {form.category === 'Onboarding'
-                  ? "Provide each new employee's information for account setup."
-                  : 'Provide each employee\'s information to deactivate their accounts.'}
+                  ? t('newTicket.onboardingHint')
+                  : t('newTicket.offboardingHint')}
               </p>
 
               <div className="mt-4 space-y-5">
                 {people.map((person, index) => (
                   <div key={index} className="rounded-3xl border border-slate-100 p-5">
                     <div className="mb-4 flex items-center justify-between">
-                      <span className="text-sm font-bold text-lazem-teal">Person {index + 1}</span>
+                      <span className="text-sm font-bold text-lazem-teal">{t('newTicket.person')} {index + 1}</span>
                       {people.length > 1 && (
                         <button
                           type="button"
                           onClick={() => removePerson(index)}
                           className="text-slate-400 hover:text-rose-600"
-                          aria-label="Remove person"
+                          aria-label={t('newTicket.removePerson')}
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -282,35 +287,35 @@ export default function NewTicketPage() {
                     </div>
                     <div className="grid gap-5 md:grid-cols-2">
                       <div>
-                        <label className="label">First name (Arabic)</label>
+                        <label className="label">{t('newTicket.firstNameAr')}</label>
                         <input className="input" value={person.firstNameAr} onChange={(e) => updatePerson(index, { firstNameAr: e.target.value })} required />
                       </div>
                       <div>
-                        <label className="label">Last name (Arabic)</label>
+                        <label className="label">{t('newTicket.lastNameAr')}</label>
                         <input className="input" value={person.lastNameAr} onChange={(e) => updatePerson(index, { lastNameAr: e.target.value })} required />
                       </div>
                       <div>
-                        <label className="label">First name (English)</label>
+                        <label className="label">{t('newTicket.firstNameEn')}</label>
                         <input className="input" value={person.firstNameEn} onChange={(e) => updatePerson(index, { firstNameEn: e.target.value })} required />
                       </div>
                       <div>
-                        <label className="label">Last name (English)</label>
+                        <label className="label">{t('newTicket.lastNameEn')}</label>
                         <input className="input" value={person.lastNameEn} onChange={(e) => updatePerson(index, { lastNameEn: e.target.value })} required />
                       </div>
                       <div>
-                        <label className="label">Job title (Arabic)</label>
+                        <label className="label">{t('newTicket.jobTitleAr')}</label>
                         <input className="input" value={person.jobTitleAr} onChange={(e) => updatePerson(index, { jobTitleAr: e.target.value })} required />
                       </div>
                       <div>
-                        <label className="label">Job title (English)</label>
+                        <label className="label">{t('newTicket.jobTitleEn')}</label>
                         <input className="input" value={person.jobTitleEn} onChange={(e) => updatePerson(index, { jobTitleEn: e.target.value })} required />
                       </div>
                       <div>
-                        <label className="label">Mobile number</label>
+                        <label className="label">{t('newTicket.mobile')}</label>
                         <input className="input" type="tel" value={person.mobile} onChange={(e) => updatePerson(index, { mobile: e.target.value })} required />
                       </div>
                       <div>
-                        <label className="label">Personal email</label>
+                        <label className="label">{t('newTicket.personalEmail')}</label>
                         <input className="input" type="email" value={person.personalEmail} onChange={(e) => updatePerson(index, { personalEmail: e.target.value })} required />
                       </div>
                     </div>
@@ -324,7 +329,7 @@ export default function NewTicketPage() {
                 className="btn-secondary mt-4 flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
-                Add another person
+                {t('newTicket.addPerson')}
               </button>
             </div>
           )}
@@ -341,11 +346,11 @@ export default function NewTicketPage() {
               onClick={() => router.back()}
               className="btn-secondary"
             >
-              Cancel
+              {t('newTicket.cancel')}
             </button>
 
             <button disabled={loading} className="btn-primary">
-              {loading ? 'Creating...' : 'Create Ticket'}
+              {loading ? t('newTicket.creating') : t('newTicket.submit')}
             </button>
           </div>
         </form>
